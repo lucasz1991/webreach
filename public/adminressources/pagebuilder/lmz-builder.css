@@ -1,0 +1,276 @@
+﻿.lmz-builder-host {
+    min-height: 80vh;
+    height: 100%;
+    color-scheme: light;
+}
+
+.lmz-builder {
+    color-scheme: light;
+    --lmzbjs-main-color: #f8fafc;
+    --lmzbjs-primary-color: #ffffff;
+    --lmzbjs-secondary-color: #334155;
+    --lmzbjs-tertiary-color: #2563eb;
+    --lmzbjs-quaternary-color: #1d4ed8;
+    --lmzbjs-font-color: #0f172a;
+    --lmzbjs-font-color-active: #020617;
+    --lmzbjs-main-dark-color: rgba(15, 23, 42, 0.12);
+    --lmzbjs-secondary-dark-color: rgba(15, 23, 42, 0.06);
+    --lmzbjs-main-light-color: rgba(37, 99, 235, 0.12);
+    --lmzbjs-secondary-light-color: rgba(15, 23, 42, 0.7);
+    --lmzbjs-soft-light-color: rgba(255, 255, 255, 0.7);
+    --lmzbjs-light-border: rgba(15, 23, 42, 0.08);
+    --lmzbjs-arrow-color: rgba(15, 23, 42, 0.7);
+    --lmzbjs-dark-text-shadow: rgba(255, 255, 255, 0.6);
+    --lmz-border: #d8e1ea;
+    --lmz-surface: #f3f6fb;
+    --lmz-sidebar: #ffffff;
+    --lmz-toolbar: #f8fafc;
+    --lmz-toolbar-text: #0f172a;
+    --lmz-accent: #2563eb;
+    --lmz-muted: #64748b;
+    --lmz-success: #16a34a;
+    --lmz-danger: #dc2626;
+    display: grid;
+    grid-template-rows: 52px minmax(0, 1fr);
+    height: 100%;
+    border: 1px solid var(--lmz-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--lmz-surface);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.lmz-builder__topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    background: var(--lmz-toolbar);
+    color: var(--lmz-toolbar-text);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.lmz-builder__brand {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.lmz-builder__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lmz-builder__actions button {
+    border: 1px solid rgba(15, 23, 42, 0.15);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    background: #ffffff;
+    color: var(--lmz-toolbar-text);
+    cursor: pointer;
+    transition: 120ms ease;
+}
+
+.lmz-builder__actions button:hover {
+    background: #f1f5f9;
+    border-color: rgba(15, 23, 42, 0.25);
+}
+
+.lmz-builder__actions button.is-primary {
+    background: var(--lmz-accent);
+    border-color: transparent;
+    color: #ffffff;
+}
+
+.lmz-builder__actions button.is-primary:hover {
+    background: #1e4fd9;
+}
+
+.lmz-builder__status {
+    justify-self: end;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--lmz-muted);
+}
+
+.lmz-builder__status[data-state="success"] {
+    color: #86efac;
+}
+
+.lmz-builder__status[data-state="error"] {
+    color: #fecaca;
+}
+
+.lmz-builder__status[data-state="muted"] {
+    color: #64748b;
+}
+
+.lmz-builder__body {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr) 320px;
+    min-height: 0;
+}
+
+.lmz-builder__sidebar {
+    display: grid;
+    grid-template-rows: 42px minmax(0, 1fr);
+    min-height: 0;
+    background: var(--lmz-sidebar);
+}
+
+.lmz-builder__sidebar--left {
+    border-right: 1px solid var(--lmz-border);
+}
+
+.lmz-builder__sidebar--right {
+    border-left: 1px solid var(--lmz-border);
+}
+
+.lmz-builder__tabs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    border-bottom: 1px solid var(--lmz-border);
+    background: #f8fafc;
+}
+
+.lmz-builder__tabs button {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px 8px;
+    cursor: pointer;
+}
+
+.lmz-builder__tabs button.is-active {
+    color: var(--lmz-accent);
+    border-bottom-color: var(--lmz-accent);
+    background: #ffffff;
+}
+
+.lmz-builder__panels {
+    position: relative;
+    min-height: 0;
+}
+
+.lmz-builder__panel {
+    display: none;
+    height: 100%;
+    min-height: 0;
+}
+
+.lmz-builder__panel.is-active {
+    display: block;
+}
+
+.lmz-builder__main {
+    min-width: 0;
+    min-height: 0;
+    display: block;
+    background: #edf2f7;
+}
+
+.lmz-builder__canvas {
+    height: 100%;
+}
+
+.lmz-builder__mount {
+    height: 100%;
+    overflow: auto;
+}
+
+.lmz-builder__mount--selectors {
+    min-height: 48px;
+    border-bottom: 1px solid var(--lmz-border);
+}
+
+.lmz-builder .lmzbjs-block-category {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.lmz-builder .lmzbjs-block {
+    border: 1px solid #dbeafe;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1e293b;
+}
+
+.lmz-builder .lmzbjs-block:hover {
+    border-color: #93c5fd;
+}
+
+.lmz-builder .lmzbjs-layer-title {
+    color: #1e293b;
+}
+
+.lmz-builder .lmzbjs-sm-sector {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.lmz-builder .lmzbjs-sm-title {
+    background: #f8fafc;
+    color: #334155;
+}
+
+.lmz-builder .lmzbjs-trt-trait {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.lmz-builder .lmzbjs-mdl-dialog,
+.lmz-builder .lmzbjs-am-assets {
+    border-radius: 8px;
+}
+
+.lmz-builder .lmzbjs-editor,
+.lmz-builder .lmzbjs-editor-cont,
+.lmz-builder .lmzbjs-pn-panel,
+.lmz-builder .lmzbjs-pn-views,
+.lmz-builder .lmzbjs-pn-views-container,
+.lmz-builder .lmzbjs-mdl-dialog,
+.lmz-builder .lmzbjs-am-assets-cont {
+    color-scheme: light;
+}
+
+@media (max-width: 1280px) {
+    .lmz-builder__body {
+        grid-template-columns: 240px minmax(0, 1fr) 280px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .lmz-builder {
+        grid-template-rows: 60px minmax(0, 1fr);
+    }
+
+    .lmz-builder__topbar {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 8px 10px;
+    }
+
+    .lmz-builder__status {
+        justify-self: start;
+    }
+
+    .lmz-builder__body {
+        grid-template-columns: 1fr;
+        grid-template-rows: 220px minmax(0, 1fr) 260px;
+    }
+
+    .lmz-builder__sidebar--left {
+        border-right: 0;
+        border-bottom: 1px solid var(--lmz-border);
+    }
+
+    .lmz-builder__sidebar--right {
+        border-left: 0;
+        border-top: 1px solid var(--lmz-border);
+    }
+}
