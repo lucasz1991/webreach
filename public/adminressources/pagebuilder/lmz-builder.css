@@ -191,6 +191,95 @@
     border-bottom: 1px solid var(--lmz-border);
 }
 
+.lmz-builder .lmz-spacing-editor {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.lmz-builder .lmz-spacing-editor__handle {
+    position: absolute;
+    display: none;
+    border: 0;
+    border-radius: 4px;
+    padding: 0;
+    margin: 0;
+    pointer-events: auto;
+    opacity: 0.28;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.18);
+    transition: opacity 120ms ease, box-shadow 120ms ease;
+}
+
+.lmz-builder .lmz-spacing-editor__handle::after {
+    content: attr(data-label);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.92);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+}
+
+.lmz-builder .lmz-spacing-editor__handle[data-side="top"]::after {
+    top: 0;
+    transform: translate(-50%, -130%);
+}
+
+.lmz-builder .lmz-spacing-editor__handle[data-side="bottom"]::after {
+    top: 100%;
+    transform: translate(-50%, 30%);
+}
+
+.lmz-builder .lmz-spacing-editor__handle[data-side="left"]::after {
+    left: 0;
+    transform: translate(-105%, -50%);
+}
+
+.lmz-builder .lmz-spacing-editor__handle[data-side="right"]::after {
+    left: 100%;
+    transform: translate(5%, -50%);
+}
+
+.lmz-builder .lmz-spacing-editor__handle:hover,
+.lmz-builder .lmz-spacing-editor__handle.is-active,
+.lmz-builder .lmz-spacing-editor.is-dragging .lmz-spacing-editor__handle.is-active {
+    opacity: 0.72;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.38);
+}
+
+.lmz-builder .lmz-spacing-editor__handle:hover::after,
+.lmz-builder .lmz-spacing-editor__handle.is-active::after {
+    opacity: 1;
+}
+
+.lmz-builder .lmz-spacing-editor__handle--margin {
+    background: rgba(245, 158, 11, 0.24);
+}
+
+.lmz-builder .lmz-spacing-editor__handle--padding {
+    background: rgba(37, 99, 235, 0.18);
+}
+
+.lmz-builder .lmz-spacing-editor__handle[data-side="top"],
+.lmz-builder .lmz-spacing-editor__handle[data-side="bottom"] {
+    cursor: ns-resize;
+}
+
+.lmz-builder .lmz-spacing-editor__handle[data-side="left"],
+.lmz-builder .lmz-spacing-editor__handle[data-side="right"] {
+    cursor: ew-resize;
+}
+
 .lmz-builder .lmzbjs-block-category {
     border-bottom: 1px solid #e2e8f0;
 }

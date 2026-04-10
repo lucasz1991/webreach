@@ -4,6 +4,8 @@
     const CANVAS_TAILWIND_RELATIVE = '/adminresources/css/tailwind.min.css';
     const CANVAS_STYLE_SYNC_INTERVAL_MS = 2000;
     const LMZ_VENDOR_VERSION = '20260331-3';
+    const SPACING_SIDES = ['top', 'right', 'bottom', 'left'];
+    const SPACING_MIN_HANDLE_SIZE = 10;
 
     function toAbsoluteUrl(href, baseUrl) {
         try {
@@ -100,7 +102,7 @@
         styleManager: {
             sectors: [
                 { name: 'General', open: false, buildProps: ['display', 'position', 'top', 'right', 'bottom', 'left', 'float', 'clear', 'overflow'] },
-                { name: 'Dimension', open: false, buildProps: ['width', 'height', 'min-height', 'max-width', 'padding', 'margin'] },
+                { name: 'Dimension', open: true, buildProps: ['width', 'height', 'min-height', 'max-width', 'padding', 'margin'] },
                 {
                     name: 'Flex',
                     open: false,
@@ -674,6 +676,575 @@
         managers.slice(1).forEach((node) => node.remove());
     }
 
+    function toNumericValue(value) {
+        const parsed = typeof value === 'number' ? value : parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function roundSpacingValue(value) {
+        return Math.round(toNumericValue(value) * 100) / 100;
+    }
+
+    function clampSpacingValue(value, min) {
+        return Math.max(roundSpacingValue(value), typeof min === 'number' ? min : Number.NEGATIVE_INFINITY);
+    }
+
+    function getSpacingSnapshot(offsets) {
+        const source = offsets || {};
+
+        return {
+            margin: {
+                top: toNumericValue(source.marginTop),
+                right: toNumericValue(source.marginRight),
+                bottom: toNumericValue(source.marginBottom),
+                left: toNumericValue(source.marginLeft),
+            },
+            padding: {
+                top: Math.max(0, toNumericValue(source.paddingTop)),
+                right: Math.max(0, toNumericValue(source.paddingRight)),
+                bottom: Math.max(0, toNumericValue(source.paddingBottom)),
+                left: Math.max(0, toNumericValue(source.paddingLeft)),
+            },
+            border: {
+                top: Math.max(0, toNumericValue(source.borderTopWidth)),
+                right: Math.max(0, toNumericValue(source.borderRightWidth)),
+                bottom: Math.max(0, toNumericValue(source.borderBottomWidth)),
+                left: Math.max(0, toNumericValue(source.borderLeftWidth)),
+            },
+        };
+    }
+
+    function getScaledSpacingBox(spacing, zoom) {
+        return {
+            top: spacing.top * zoom,
+            right: spacing.right * zoom,
+            bottom: spacing.bottom * zoom,
+            left: spacing.left * zoom,
+        };
+    }
+
+    function getHandleSize(value) {
+        return value > 0 ? Math.max(value, SPACING_MIN_HANDLE_SIZE) : SPACING_MIN_HANDLE_SIZE;
+    }
+
+    function createRect(left, top, width, height) {
+        return {
+            left,
+            top,
+            width: Math.max(0, width),
+            height: Math.max(0, height),
+        };
+    }
+
+    function getPointerPosition(editor, event) {
+        const frameDocument = editor?.Canvas?.getDocument?.();
+        const frameElement = editor?.Canvas?.getFrameEl?.();
+        const sourceDocument = event?.target?.ownerDocument;
+        const clientX = toNumericValue(event?.clientX);
+        const clientY = toNumericValue(event?.clientY);
+
+        if (frameDocument && frameElement && sourceDocument === frameDocument) {
+            const frameRect = frameElement.getBoundingClientRect();
+            return {
+                x: clientX + frameRect.left,
+                y: clientY + frameRect.top,
+            };
+        }
+
+        return {
+            x: clientX,
+            y: clientY,
+        };
+    }
+
+    function getSpacingStylePayload(type, values, changedSide, nextValue) {
+        const payload = {};
+
+        SPACING_SIDES.forEach((side) => {
+            const value = side === changedSide ? nextValue : values[side];
+            payload[type + '-' + side] = roundSpacingValue(value) + 'px';
+        });
+
+        return payload;
+    }
+
+    function getSpacingDelta(side, deltaX, deltaY) {
+        if (side === 'top') {
+            return -deltaY;
+        }
+
+        if (side === 'right') {
+            return deltaX;
+        }
+
+        if (side === 'bottom') {
+            return deltaY;
+        }
+
+        return -deltaX;
+    }
+
+    function getActiveSpacingSnapshot(drag) {
+        if (!drag) {
+            return null;
+        }
+
+        const spacing = {
+            margin: { ...drag.startSpacing.margin },
+            padding: { ...drag.startSpacing.padding },
+            border: { ...drag.startSpacing.border },
+        };
+
+        if (drag.latestValues) {
+            spacing[drag.type] = { ...drag.latestValues };
+        }
+
+        return spacing;
+    }
+
+    function setupSpacingEditor(editor) {
+        if (!editor?.Canvas) {
+            return () => {};
+        }
+
+        const state = {
+            disposed: false,
+            rafId: 0,
+            overlay: null,
+            host: null,
+            handles: new Map(),
+            drag: null,
+            dragTargets: [],
+        };
+
+        const getOverlayHost = () => editor.Canvas.getSpotsEl?.() || editor.Canvas.getToolsEl?.();
+
+        const applyDragPreview = () => {
+            if (!state.drag) {
+                return;
+            }
+
+            state.drag.previewFrame = 0;
+
+            if (!state.drag.pendingValues) {
+                return;
+            }
+
+            state.drag.latestValues = { ...state.drag.pendingValues };
+            state.drag.pendingValues = null;
+            state.drag.component.addStyle(
+                getSpacingStylePayload(state.drag.type, state.drag.startValues, state.drag.side, state.drag.latestValues[state.drag.side]),
+                { partial: true }
+            );
+
+            scheduleRefresh();
+        };
+
+        const getLayoutMetrics = (element, dragState) => {
+            if (dragState) {
+                return {
+                    position: {
+                        ...dragState.startOuter,
+                        zoom: dragState.zoom,
+                    },
+                    spacing: getActiveSpacingSnapshot(dragState),
+                };
+            }
+
+            const position = editor.Canvas.getElementPos?.(element);
+            if (!position || !Number.isFinite(position.width) || !Number.isFinite(position.height)) {
+                return null;
+            }
+
+            return {
+                position,
+                spacing: getSpacingSnapshot(editor.Canvas.getElementOffsets?.(element)),
+            };
+        };
+
+        const hideOverlay = () => {
+            if (state.overlay) {
+                state.overlay.style.display = 'none';
+            }
+        };
+
+        const clearActiveHandles = () => {
+            state.handles.forEach((handle) => {
+                handle.classList.remove('is-active');
+            });
+
+            if (state.overlay) {
+                state.overlay.classList.remove('is-dragging');
+            }
+        };
+
+        const ensureOverlay = () => {
+            const host = getOverlayHost();
+            if (!host) {
+                return null;
+            }
+
+            if (state.host !== host) {
+                if (state.overlay?.parentNode) {
+                    state.overlay.parentNode.removeChild(state.overlay);
+                }
+
+                state.overlay = null;
+                state.host = host;
+                state.handles.clear();
+            }
+
+            if (state.overlay) {
+                return state.overlay;
+            }
+
+            const overlay = document.createElement('div');
+            overlay.className = 'lmz-spacing-editor';
+            overlay.style.display = 'none';
+
+            const bindHandle = (type, side) => {
+                const handle = document.createElement('button');
+                handle.type = 'button';
+                handle.className = 'lmz-spacing-editor__handle lmz-spacing-editor__handle--' + type;
+                handle.dataset.type = type;
+                handle.dataset.side = side;
+                handle.setAttribute('aria-label', type + ' ' + side);
+                handle.addEventListener('pointerdown', (event) => startDrag(event, type, side));
+                overlay.appendChild(handle);
+                state.handles.set(type + ':' + side, handle);
+            };
+
+            ['margin', 'padding'].forEach((type) => {
+                SPACING_SIDES.forEach((side) => bindHandle(type, side));
+            });
+
+            host.appendChild(overlay);
+            state.overlay = overlay;
+
+            return overlay;
+        };
+
+        const applyRect = (handle, rect) => {
+            if (!handle) {
+                return;
+            }
+
+            const isVisible = rect.width > 0 && rect.height > 0;
+            handle.style.display = isVisible ? 'block' : 'none';
+
+            if (!isVisible) {
+                handle.dataset.value = '';
+                return;
+            }
+
+            handle.style.left = rect.left + 'px';
+            handle.style.top = rect.top + 'px';
+            handle.style.width = rect.width + 'px';
+            handle.style.height = rect.height + 'px';
+        };
+
+        const refresh = () => {
+            state.rafId = 0;
+
+            if (state.disposed) {
+                return;
+            }
+
+            const overlay = ensureOverlay();
+            if (!overlay) {
+                return;
+            }
+
+            const selected = editor.getSelected?.();
+            if (!selected || editor.Commands?.isActive?.('core:preview')) {
+                hideOverlay();
+                return;
+            }
+
+            const element = selected.getEl?.();
+            if (!element) {
+                hideOverlay();
+                return;
+            }
+
+            const dragState =
+                state.drag && state.drag.component === selected && state.drag.element === element ? state.drag : null;
+            const metrics = getLayoutMetrics(element, dragState);
+
+            if (!metrics?.position || !metrics.spacing) {
+                hideOverlay();
+                return;
+            }
+
+            const position = metrics.position;
+            const zoom = Math.max(toNumericValue(position.zoom) || 1, 0.01);
+            const spacing = metrics.spacing;
+            const margin = getScaledSpacingBox(spacing.margin, zoom);
+            const padding = getScaledSpacingBox(spacing.padding, zoom);
+            const border = getScaledSpacingBox(spacing.border, zoom);
+            const outer = {
+                left: position.left,
+                top: position.top,
+                width: position.width,
+                height: position.height,
+            };
+
+            const displayMargin = {
+                top: getHandleSize(margin.top),
+                right: getHandleSize(margin.right),
+                bottom: getHandleSize(margin.bottom),
+                left: getHandleSize(margin.left),
+            };
+
+            const marginOuter = {
+                left: outer.left - displayMargin.left,
+                top: outer.top - displayMargin.top,
+                width: outer.width + displayMargin.left + displayMargin.right,
+                height: outer.height + displayMargin.top + displayMargin.bottom,
+            };
+
+            const paddingBox = {
+                left: outer.left + border.left,
+                top: outer.top + border.top,
+                width: Math.max(0, outer.width - border.left - border.right),
+                height: Math.max(0, outer.height - border.top - border.bottom),
+            };
+
+            const displayPadding = {
+                top: paddingBox.height > 0 ? Math.min(getHandleSize(padding.top), paddingBox.height) : 0,
+                right: paddingBox.width > 0 ? Math.min(getHandleSize(padding.right), paddingBox.width) : 0,
+                bottom:
+                    paddingBox.height > 0 ? Math.min(getHandleSize(padding.bottom), Math.max(paddingBox.height - Math.min(getHandleSize(padding.top), paddingBox.height), 0) || paddingBox.height) : 0,
+                left: paddingBox.width > 0 ? Math.min(getHandleSize(padding.left), paddingBox.width) : 0,
+            };
+
+            overlay.style.display = 'block';
+
+            applyRect(state.handles.get('margin:top'), createRect(marginOuter.left, marginOuter.top, marginOuter.width, displayMargin.top));
+            applyRect(
+                state.handles.get('margin:right'),
+                createRect(outer.left + outer.width, outer.top, displayMargin.right, outer.height)
+            );
+            applyRect(
+                state.handles.get('margin:bottom'),
+                createRect(marginOuter.left, outer.top + outer.height, marginOuter.width, displayMargin.bottom)
+            );
+            applyRect(state.handles.get('margin:left'), createRect(marginOuter.left, outer.top, displayMargin.left, outer.height));
+
+            applyRect(
+                state.handles.get('padding:top'),
+                createRect(paddingBox.left, paddingBox.top, paddingBox.width, displayPadding.top)
+            );
+            applyRect(
+                state.handles.get('padding:right'),
+                createRect(
+                    Math.max(paddingBox.left + paddingBox.width - displayPadding.right, paddingBox.left),
+                    paddingBox.top + displayPadding.top,
+                    displayPadding.right,
+                    Math.max(0, paddingBox.height - displayPadding.top - displayPadding.bottom)
+                )
+            );
+            applyRect(
+                state.handles.get('padding:bottom'),
+                createRect(
+                    paddingBox.left,
+                    Math.max(paddingBox.top + paddingBox.height - displayPadding.bottom, paddingBox.top),
+                    paddingBox.width,
+                    displayPadding.bottom
+                )
+            );
+            applyRect(
+                state.handles.get('padding:left'),
+                createRect(
+                    paddingBox.left,
+                    paddingBox.top + displayPadding.top,
+                    displayPadding.left,
+                    Math.max(0, paddingBox.height - displayPadding.top - displayPadding.bottom)
+                )
+            );
+
+            state.handles.forEach((handle, key) => {
+                const [type, side] = key.split(':');
+                const rawValue = spacing[type][side];
+                const value = roundSpacingValue(rawValue) + 'px';
+                handle.title = type + ' ' + side + ': ' + value;
+                handle.dataset.value = value;
+                handle.dataset.label = type + ' ' + side + ': ' + value;
+            });
+        };
+
+        const scheduleRefresh = () => {
+            if (state.disposed || state.rafId) {
+                return;
+            }
+
+            state.rafId = window.requestAnimationFrame(refresh);
+        };
+
+        const removeDragListeners = () => {
+            state.dragTargets.forEach((target) => {
+                target.removeEventListener('pointermove', onPointerMove, true);
+                target.removeEventListener('pointerup', stopDrag, true);
+                target.removeEventListener('pointercancel', stopDrag, true);
+            });
+
+            state.dragTargets = [];
+        };
+
+        function stopDrag() {
+            if (!state.drag) {
+                return;
+            }
+
+            const { component, handleEl, type, side, startValues, pointerId } = state.drag;
+
+            if (state.drag.previewFrame) {
+                window.cancelAnimationFrame(state.drag.previewFrame);
+                state.drag.previewFrame = 0;
+            }
+
+            if (state.drag.pendingValues) {
+                state.drag.latestValues = { ...state.drag.pendingValues };
+                state.drag.pendingValues = null;
+            }
+
+            removeDragListeners();
+            clearActiveHandles();
+
+            if (handleEl?.releasePointerCapture && pointerId !== undefined && handleEl.hasPointerCapture?.(pointerId)) {
+                handleEl.releasePointerCapture(pointerId);
+            }
+
+            if (state.drag.latestValues) {
+                component.addStyle(getSpacingStylePayload(type, startValues, side, state.drag.latestValues[side]));
+            }
+
+            state.drag = null;
+            scheduleRefresh();
+        }
+
+        function onPointerMove(event) {
+            if (!state.drag) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const pointer = getPointerPosition(editor, event);
+            const deltaX = (pointer.x - state.drag.startPointer.x) / state.drag.zoom;
+            const deltaY = (pointer.y - state.drag.startPointer.y) / state.drag.zoom;
+            const delta = getSpacingDelta(state.drag.side, deltaX, deltaY);
+            const minValue = state.drag.type === 'padding' ? 0 : undefined;
+            const nextValue = clampSpacingValue(state.drag.startValues[state.drag.side] + delta, minValue);
+            const nextValues = {
+                ...state.drag.startValues,
+                [state.drag.side]: nextValue,
+            };
+
+            state.drag.pendingValues = nextValues;
+
+            if (!state.drag.previewFrame) {
+                state.drag.previewFrame = window.requestAnimationFrame(applyDragPreview);
+            }
+        }
+
+        function startDrag(event, type, side) {
+            if (editor.Commands?.isActive?.('core:preview')) {
+                return;
+            }
+
+            const selected = editor.getSelected?.();
+            const element = selected?.getEl?.();
+            if (!selected || !element) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            removeDragListeners();
+            clearActiveHandles();
+
+            const position = editor.Canvas.getElementPos?.(element);
+            if (!position || !Number.isFinite(position.width) || !Number.isFinite(position.height)) {
+                return;
+            }
+
+            const zoom = Math.max(toNumericValue(position?.zoom) || 1, 0.01);
+            const spacing = getSpacingSnapshot(editor.Canvas.getElementOffsets?.(element));
+            const handle = state.handles.get(type + ':' + side);
+            const pointer = getPointerPosition(editor, event);
+            const frameWindow = editor.Canvas.getWindow?.();
+            const targets = [window];
+
+            if (frameWindow && frameWindow !== window) {
+                targets.push(frameWindow);
+            }
+
+            if (handle) {
+                handle.classList.add('is-active');
+                if (handle.setPointerCapture && event.pointerId !== undefined) {
+                    handle.setPointerCapture(event.pointerId);
+                }
+            }
+
+            if (state.overlay) {
+                state.overlay.classList.add('is-dragging');
+            }
+
+            state.drag = {
+                component: selected,
+                element,
+                type,
+                side,
+                zoom,
+                pointerId: event.pointerId,
+                handleEl: handle,
+                startPointer: pointer,
+                startOuter: {
+                    left: position.left,
+                    top: position.top,
+                    width: position.width,
+                    height: position.height,
+                },
+                startSpacing: spacing,
+                startValues: { ...spacing[type] },
+                latestValues: null,
+                pendingValues: null,
+                previewFrame: 0,
+            };
+
+            state.dragTargets = targets;
+            targets.forEach((target) => {
+                target.addEventListener('pointermove', onPointerMove, true);
+                target.addEventListener('pointerup', stopDrag, true);
+                target.addEventListener('pointercancel', stopDrag, true);
+            });
+        }
+
+        const editorEvents = ['load', 'component:selected', 'component:deselected', 'component:update', 'component:styleUpdate', 'canvas:coords', 'canvas:zoom', 'canvas:frame:load'];
+        editorEvents.forEach((eventName) => editor.on(eventName, scheduleRefresh));
+        window.addEventListener('resize', scheduleRefresh);
+        scheduleRefresh();
+
+        return () => {
+            state.disposed = true;
+            removeDragListeners();
+            clearActiveHandles();
+            window.removeEventListener('resize', scheduleRefresh);
+            editorEvents.forEach((eventName) => editor.off(eventName, scheduleRefresh));
+
+            if (state.rafId) {
+                window.cancelAnimationFrame(state.rafId);
+                state.rafId = 0;
+            }
+
+            if (state.overlay?.parentNode) {
+                state.overlay.parentNode.removeChild(state.overlay);
+            }
+        };
+    }
+
     function addDefaultBlocks(editor) {
         const blockManager = editor.BlockManager;
 
@@ -1042,6 +1613,8 @@
                 stylePrefix: 'lmzbjs-',
                 fromElement: false,
                 noticeOnUnload: false,
+                showOffsets: false,
+                showOffsetsSelected: false,
                 storageManager: false,
                 panels: { defaults: [] },
                 blockManager: { appendTo: refs.blocks },
@@ -1097,6 +1670,7 @@
 
         let api = null;
         let stopCanvasStyleSync = () => {};
+        let stopSpacingEditor = () => {};
 
         const saveProject = async (reason) => {
             if (state.destroyed) {
@@ -1228,6 +1802,7 @@
             destroy() {
                 state.destroyed = true;
                 stopCanvasStyleSync();
+                stopSpacingEditor();
                 if (state.autosaveTimer) {
                     window.clearInterval(state.autosaveTimer);
                 }
@@ -1276,6 +1851,7 @@
         });
 
         stopCanvasStyleSync = startCanvasStyleSync(editor, canvasStyles);
+        stopSpacingEditor = setupSpacingEditor(editor);
 
         if (options.autosave.enabled) {
             state.autosaveTimer = window.setInterval(() => {

@@ -60,14 +60,12 @@ Route::middleware(['auth:sanctum', 'auth.status', config('jetstream.auth_session
         Route::get('/activities', Safety::class)->name('activities');
         Route::get('/employees', Employees::class)->name('employees');
         Route::get('/user/{userId}', UserProfile::class)->name('user-profile');
-
         Route::get('/cms/edit-project/{projectId?}', EditProject::class)->name('cms.edit-project');
-
         Route::post('/pagebuilder/save', [PagebuilderProjectController::class, 'save'])->name('pagebuilder.save');
         Route::get('/pagebuilder/load/{id}', [PagebuilderProjectController::class, 'load'])->name('pagebuilder.load');
         Route::post('/pagebuilder/upload', [ApiPagebuilderProjectController::class, 'uploadImage'])->name('pagebuilder.upload');
         Route::get('/pagebuilder/assets', [ApiPagebuilderProjectController::class, 'getAssets'])->name('pagebuilder.assets');
-    });
+});
 
 Route::middleware(['auth:sanctum', 'auth.status', config('jetstream.auth_session'), 'verified', 'role:admin,staff'])->group(function () {
     Route::post('/admin/pagebuilder/save', [PagebuilderProjectController::class, 'save']);
