@@ -4,7 +4,7 @@
 <head>
     @include('layouts.metahead')
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title') | Admin-Area CBW Schulnetz </title>
+    <title>@yield('title') | {{ config('app.name', 'WebReach') }} Admin</title>
     <!-- css files -->
     @include('layouts.head-css')
     @vite(['resources/css/app.css'])
@@ -12,7 +12,7 @@
     @livewireStyles
     @yield('css')
 </head>
-    <body data-mode="light" data-sidebar-size="lg" class="group font-notosans">
+    <body data-mode="light" data-sidebar-size="lg" data-sidebar-collapsible="true" data-sidebar-expanded="false" class="group font-notosans">
         <!-- sidebar -->
         @include('layouts.sidebar')
         <!-- topbar -->
@@ -21,7 +21,7 @@
         @yield('content')
         <!-- Page Content -->
         @if(isset($slot))
-            <main class="bg-gradient-to-b from-secondary-500 to-secondary-900">
+            <main class="bg-slate-100">
                 <div class="main-content group-data-[sidebar-size=sm]:ml-[70px]">
                     <div class="min-h-screen page-content px-1" style="box-shadow: inset 0px 80px 30px -10px rgba(0, 0, 0, 0.2);">
                         <div class="container-fluid px-0 md:px-5">

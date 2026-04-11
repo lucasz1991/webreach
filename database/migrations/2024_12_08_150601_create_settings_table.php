@@ -18,8 +18,8 @@ return new class extends Migration
             $table->longText('value')->nullable();
             $table->timestamps();
     
-            // Zusammengesetzter eindeutiger Index für key, type und value
-            $table->unique(['key', 'type', 'value']);
+            // Zusammengesetzter eindeutiger Index für key und type
+            $table->unique(['key', 'type']);
         });
     }
 

@@ -25,6 +25,7 @@ window.Swiper = Swiper;
 let pagebuilderModulePromise = null;
 let lmzBuilderAssetsPromise = null;
 const LMZ_BUILDER_VERSION = '20260411-2';
+let sidebarCollapseTimer = null;
 
 function ensureFunctionArray(value) {
     return Array.isArray(value) ? value.filter((item) => typeof item === 'function') : [];
@@ -170,6 +171,70 @@ function initMetisMenu() {
     window.__webreachMetisMenu = new window.MetisMenu('#side-menu');
 }
 
+function clearSidebarCollapseTimer() {
+    if (sidebarCollapseTimer) {
+        window.clearTimeout(sidebarCollapseTimer);
+        sidebarCollapseTimer = null;
+    }
+}
+
+function isDesktopHoverSidebar() {
+    return window.innerWidth >= 1140 && Boolean(document.querySelector('.vertical-menu'));
+}
+
+function isSidebarHoveredOrFocused() {
+    const activeElement = document.activeElement;
+    const hoverInsideSidebar = document.querySelector('.vertical-menu:hover, .topbar-brand:hover');
+    const focusInsideSidebar = activeElement?.closest('.vertical-menu, .topbar-brand');
+
+    return Boolean(hoverInsideSidebar || focusInsideSidebar);
+}
+
+function setDesktopSidebarExpanded(expanded) {
+    if (document.body.getAttribute('data-sidebar-collapsible') !== 'true') {
+        return;
+    }
+
+    document.body.setAttribute('data-sidebar-expanded', expanded ? 'true' : 'false');
+}
+
+function scheduleDesktopSidebarCollapse() {
+    clearSidebarCollapseTimer();
+
+    sidebarCollapseTimer = window.setTimeout(() => {
+        const activeElement = document.activeElement;
+        const focusInsideSidebar = activeElement?.closest('.vertical-menu, .topbar-brand');
+        const hoverInsideSidebar = document.querySelector('.vertical-menu:hover, .topbar-brand:hover');
+
+        if (!focusInsideSidebar && !hoverInsideSidebar) {
+            setDesktopSidebarExpanded(false);
+        }
+    }, 90);
+}
+
+function syncSidebarInteractionMode() {
+    const hasSidebar = Boolean(document.querySelector('.vertical-menu'));
+    if (!hasSidebar) {
+        return;
+    }
+
+    const desktopMode = isDesktopHoverSidebar();
+    document.body.setAttribute('data-sidebar-collapsible', desktopMode ? 'true' : 'false');
+
+    if (desktopMode) {
+        document.body.classList.remove('sidebar-enable');
+
+        const isExpanded = document.body.getAttribute('data-sidebar-expanded') === 'true';
+        const shouldStayExpanded = isExpanded || isSidebarHoveredOrFocused();
+
+        document.body.setAttribute('data-sidebar-expanded', shouldStayExpanded ? 'true' : 'false');
+        return;
+    }
+
+    clearSidebarCollapseTimer();
+    document.body.setAttribute('data-sidebar-expanded', 'false');
+}
+
 function initLeftMenuCollapse() {
     document.querySelectorAll('.vertical-menu-btn').forEach((button) => {
         if (button.dataset.webreachBound === '1') {
@@ -180,13 +245,14 @@ function initLeftMenuCollapse() {
 
         button.addEventListener('click', (event) => {
             event.preventDefault();
-            document.body.classList.toggle('sidebar-enable');
 
-            if (window.innerWidth >= 992) {
-                const current = document.body.getAttribute('data-sidebar-size');
-                document.body.setAttribute('data-sidebar-size', current === 'sm' ? 'lg' : 'sm');
+            if (isDesktopHoverSidebar()) {
+                clearSidebarCollapseTimer();
+                setDesktopSidebarExpanded(document.body.getAttribute('data-sidebar-expanded') !== 'true');
+                return;
             }
 
+            document.body.classList.toggle('sidebar-enable');
             initMenuItemScroll();
         });
     });
@@ -194,21 +260,22 @@ function initLeftMenuCollapse() {
 
 function initActiveMenu() {
     const pageUrl = window.location.href.split(/[?#]/)[0];
-    const menuItems = document.querySelectorAll('#sidebar-menu a');
+    const menuItems = Array.from(document.querySelectorAll('#sidebar-menu a'));
+    const nestedLists = document.querySelectorAll('#sidebar-menu ul');
 
-    menuItems.forEach((item) => {
-        item.classList.remove('active');
-        const li = item.closest('li');
-        if (li) {
-            li.classList.remove('mm-active');
+    menuItems.forEach((item) => item.classList.remove('active'));
+    document.querySelectorAll('#sidebar-menu li.mm-active').forEach((item) => item.classList.remove('mm-active'));
+    nestedLists.forEach((list) => {
+        if (list.id !== 'side-menu') {
+            list.classList.remove('mm-show');
         }
     });
 
-    menuItems.forEach((item) => {
-        if (item.href !== pageUrl) {
-            return;
-        }
+    const exactMatches = menuItems.filter((item) => item.href === pageUrl);
+    const fallbackMatches = menuItems.filter((item) => item.dataset.menuActive === 'true');
+    const activeItems = exactMatches.length > 0 ? exactMatches : fallbackMatches;
 
+    activeItems.forEach((item) => {
         item.classList.add('active');
 
         let currentLi = item.closest('li');
@@ -216,7 +283,7 @@ function initActiveMenu() {
             currentLi.classList.add('mm-active');
 
             const parentUl = currentLi.parentElement;
-            if (parentUl && parentUl.tagName === 'UL') {
+            if (parentUl && parentUl.tagName === 'UL' && parentUl.id !== 'side-menu') {
                 parentUl.classList.add('mm-show');
             }
 
@@ -249,9 +316,94 @@ function initFeather() {
     }
 }
 
+function initSidebarInteractions() {
+    if (document.body.dataset.webreachSidebarInteractionsBound !== '1') {
+        document.body.dataset.webreachSidebarInteractionsBound = '1';
+
+        document.querySelectorAll('.vertical-menu, .topbar-brand').forEach((element) => {
+            if (element.dataset.webreachSidebarHoverBound === '1') {
+                return;
+            }
+
+            element.dataset.webreachSidebarHoverBound = '1';
+
+            element.addEventListener('mouseenter', () => {
+                if (!isDesktopHoverSidebar()) {
+                    return;
+                }
+
+                clearSidebarCollapseTimer();
+                setDesktopSidebarExpanded(true);
+            });
+
+            element.addEventListener('mouseleave', () => {
+                if (!isDesktopHoverSidebar()) {
+                    return;
+                }
+
+                scheduleDesktopSidebarCollapse();
+            });
+
+            element.addEventListener('focusin', () => {
+                if (!isDesktopHoverSidebar()) {
+                    return;
+                }
+
+                clearSidebarCollapseTimer();
+                setDesktopSidebarExpanded(true);
+            });
+
+            element.addEventListener('focusout', () => {
+                if (!isDesktopHoverSidebar()) {
+                    return;
+                }
+
+                scheduleDesktopSidebarCollapse();
+            });
+        });
+
+        document.addEventListener(
+            'pointerdown',
+            (event) => {
+                const target = event.target instanceof Element ? event.target : null;
+
+                if (isDesktopHoverSidebar()) {
+                    if (!target || !target.closest('.vertical-menu, .topbar-brand')) {
+                        clearSidebarCollapseTimer();
+                        setDesktopSidebarExpanded(false);
+                    }
+
+                    return;
+                }
+
+                if (!target || !target.closest('.vertical-menu, .vertical-menu-btn')) {
+                    document.body.classList.remove('sidebar-enable');
+                }
+            },
+            true
+        );
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            clearSidebarCollapseTimer();
+            setDesktopSidebarExpanded(false);
+            document.body.classList.remove('sidebar-enable');
+        });
+
+        window.addEventListener('resize', syncSidebarInteractionMode);
+    }
+
+    syncSidebarInteractionMode();
+}
+
 function initAdminLayout() {
+    syncSidebarInteractionMode();
     initMetisMenu();
     initLeftMenuCollapse();
+    initSidebarInteractions();
     initActiveMenu();
     initMenuItemScroll();
     initFeather();

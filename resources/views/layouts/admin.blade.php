@@ -8,7 +8,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body x-data="{ sidebarOpen: false }" class="bg-slate-100 text-slate-900 antialiased">
+<body x-data="{ sidebarOpen: false }" data-sidebar-size="lg" class="group bg-slate-100 text-slate-900 antialiased">
     <header class="fixed inset-x-0 top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur">
         <div class="flex h-16 items-center justify-between px-4 sm:px-6">
             <div class="flex items-center gap-3">
@@ -53,6 +53,7 @@
         </div>
     </main>
 
+    @include('layouts.vendor-scripts')
     @livewireScripts
 </body>
 </html>
