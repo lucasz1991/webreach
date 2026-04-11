@@ -7,6 +7,11 @@ use Illuminate\Support\Carbon;
 
 class PageController extends Controller
 {
+    public function home()
+    {
+        return $this->show('start');
+    }
+
     public function show(string $slug)
     {
         $now = Carbon::now();

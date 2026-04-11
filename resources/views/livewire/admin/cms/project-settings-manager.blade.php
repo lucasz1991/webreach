@@ -42,6 +42,14 @@
                         <input type="datetime-local" wire:model="published_until" class="mt-1 block w-full border rounded px-4 py-2">
                     </div>
                 </div>
+                <!-- Image Previews -->
+                <div>
+                    <x-pagebuilder-preview-grid
+                        :preview-urls="$projectPreviewUrls"
+                        :subject="$name ?: 'dieses Modul'"
+                        :show-empty-hint="$projectId ? true : false"
+                    />
+                </div>
                 <div class="mb-4 grid grid-cols-2 gap-4">
                     <!-- Seiten Auswahl -->
                     <div class="mb-4" x-data="{ selectedPages: @entangle('page') }">

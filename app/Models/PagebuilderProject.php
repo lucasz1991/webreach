@@ -4,70 +4,215 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PagebuilderProject extends Model
 {
     use HasFactory, SoftDeletes;
 
+    private const PREVIEW_TYPES = [
+        'desktop' => 'preview_desktop',
+        'tablet' => 'preview_tablet',
+        'mobile' => 'preview_mobile',
+    ];
+
+    private const RENDER_CACHE_VERSION_KEY = 'pagebuilder_render_cache_version';
+
     protected $fillable = [
-        'name', 
-        'data', 
-        'html', 
-        'cleaned_html', 
-        'js', 
-        'css', 
-        'last_edited_by', 
-        'page', 
-        'position', 
-        'lang', 
-        'lock', 
-        'published_from', 
-        'published_until', 
-        'order_id', 
+        'name',
+        'data',
+        'html',
+        'cleaned_html',
+        'js',
+        'css',
+        'last_edited_by',
+        'page',
+        'position',
+        'lang',
+        'lock',
+        'published_from',
+        'published_until',
+        'order_id',
         'status',
-        'type'
+        'type',
     ];
 
     protected $casts = [
-        'page' => 'array', // Position als JSON-Array
-        'position' => 'array', // Position als JSON-Array
-        'lock' => 'boolean',   // Lock als Boolean speichern
+        'page' => 'array',
+        'position' => 'array',
+        'lock' => 'boolean',
     ];
 
-    protected static function boot()
+    protected static function booted(): void
     {
-        parent::boot();
+        static::saved(function (self $project) {
+            $project->syncDerivedState();
+        });
 
-        static::updated(function ($project) {
-            $project->updateHtmlContent($project);
-            $project->setLastEditor();
+        static::deleted(function () {
+            static::bumpRenderCacheVersion();
+        });
+
+        static::restored(function () {
+            static::bumpRenderCacheVersion();
+        });
+
+        static::forceDeleted(function (self $project) {
+            $project->purgePreviewFiles();
+            static::bumpRenderCacheVersion();
         });
     }
 
-    public function updateProjekt()
+    public static function renderCacheVersion(): int
     {
-        $project = PagebuilderProject::find($this->id);
-        $project->updateHtmlContent($project);
-        $project->setLastEditor();
+        return max(1, (int) Cache::get(self::RENDER_CACHE_VERSION_KEY, 1));
     }
 
-    public function updateHtmlContent($project)
+    public static function bumpRenderCacheVersion(): int
     {
+        $nextVersion = static::renderCacheVersion() + 1;
+        Cache::forever(self::RENDER_CACHE_VERSION_KEY, $nextVersion);
+
+        return $nextVersion;
+    }
+
+    public function syncDerivedState(): void
+    {
+        $this->updateHtmlContent($this);
+        $this->setLastEditor();
+        static::bumpRenderCacheVersion();
+    }
+
+    public function updateProjekt(): void
+    {
+        $project = self::find($this->id);
+        if ($project) {
+            $project->syncDerivedState();
+        }
+    }
+
+    public function updateHtmlContent(?self $project = null): void
+    {
+        $project = $project ?: $this;
         $project->updateHtmlFromData();
         $project->updateCssFromData();
     }
 
-    public function setLastEditor()
+    public function setLastEditor(): void
     {
-        if (auth()->check()) {
+        if (auth()->check() && (int) $this->last_edited_by !== (int) auth()->id()) {
             $this->updateQuietly(['last_edited_by' => auth()->id()]);
         }
     }
 
-    public function updateHtmlFromData()
+    public function files(): MorphMany
+    {
+        return $this->morphMany(File::class, 'fileable');
+    }
+
+    public function previewFiles(): MorphMany
+    {
+        return $this->files()->whereIn('type', array_values(self::PREVIEW_TYPES));
+    }
+
+    public function previewFile(string $device): ?File
+    {
+        $type = self::PREVIEW_TYPES[$device] ?? null;
+        if (!$type) {
+            return null;
+        }
+
+        return $this->files()->where('type', $type)->first();
+    }
+
+    public function getPreviewUrlsAttribute(): array
+    {
+        $previewFiles = $this->previewFiles()->get()->keyBy('type');
+
+        return collect(self::PREVIEW_TYPES)->mapWithKeys(function (string $type, string $device) use ($previewFiles) {
+            /** @var File|null $file */
+            $file = $previewFiles->get($type);
+
+            return [$device => $file?->getEphemeralPublicUrl(60)];
+        })->all();
+    }
+
+    public function syncPreviewImages(array $previews): void
+    {
+        foreach (self::PREVIEW_TYPES as $device => $type) {
+            if (!array_key_exists($device, $previews)) {
+                continue;
+            }
+
+            $preview = $previews[$device];
+
+            if (is_string($preview) && str_starts_with($preview, 'data:image/')) {
+                $this->storePreviewImage($device, $preview);
+                continue;
+            }
+
+            if ($preview === null || $preview === '') {
+                $this->previewFile($device)?->delete();
+            }
+        }
+    }
+
+    public function storePreviewBinary(string $device, string $binary, string $mimeType = 'image/png'): File
+    {
+        $type = self::PREVIEW_TYPES[$device] ?? null;
+
+        if (!$type) {
+            throw new \InvalidArgumentException('Unbekannter Preview-Typ: ' . $device);
+        }
+
+        if ($binary === '') {
+            throw new \InvalidArgumentException('Leere Preview-Daten.');
+        }
+
+        $mimeType = strtolower(trim($mimeType)) ?: 'image/png';
+        $extension = match ($mimeType) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            default => preg_replace('/[^a-z0-9]+/i', '', Str::after($mimeType, '/')) ?: 'png',
+        };
+
+        $path = 'pagebuilder/previews/' . $this->getKey() . '/'
+            . $device . '-' . Str::uuid() . '.' . $extension;
+
+        Storage::disk('public')->put($path, $binary);
+
+        $existing = $this->previewFile($device);
+        $oldPath = $existing?->path;
+        $oldDisk = $existing?->disk ?: 'public';
+
+        $file = $existing ?: $this->files()->make();
+        $file->fill([
+            'filepool_id' => null,
+            'user_id' => auth()->id(),
+            'name' => trim(($this->name ?: 'Pagebuilder Project') . ' ' . ucfirst($device) . ' Preview'),
+            'path' => $path,
+            'disk' => 'public',
+            'mime_type' => $mimeType,
+            'type' => $type,
+            'size' => strlen($binary),
+            'expires_at' => null,
+        ]);
+        $file->save();
+
+        if ($oldPath && ($oldPath !== $path || $oldDisk !== 'public') && Storage::disk($oldDisk)->exists($oldPath)) {
+            Storage::disk($oldDisk)->delete($oldPath);
+        }
+
+        return $file;
+    }
+
+    public function updateHtmlFromData(): void
     {
         $html = $this->html;
         if (!empty($html)) {
@@ -82,7 +227,7 @@ class PagebuilderProject extends Model
         }
     }
 
-    private function extractScripts($html)
+    private function extractScripts($html): array
     {
         $scriptTags = [];
 
@@ -96,17 +241,15 @@ class PagebuilderProject extends Model
         return [$cleanedHtml, $extractedJs];
     }
 
-    private function sanitizeJs($js)
+    private function sanitizeJs($js): string
     {
-        // Ersetze Swiper-CDN durch den lokalen Pfad
         $js = preg_replace('/https?:\/\/[^"\']*swiper-bundle\.min\.js/i', '/adminresources/js/swiper-bundle.min.js', $js);
         $js = preg_replace('/https?:\/\/[^"\']*swiper-bundle\.min\.css/i', '/adminresources/css/swiper-bundle.min.css', $js);
 
-        // Entferne alle anderen externen Skripte
         return preg_replace('/https?:\/\/(cdn\.(jsdelivr|cdnjs|unpkg)\.com|[^\s"\']+)/i', '', $js);
     }
 
-    private function extractBodyContent($html)
+    private function extractBodyContent($html): string
     {
         if (!$html || !Str::contains($html, '<body')) {
             return $html;
@@ -122,7 +265,7 @@ class PagebuilderProject extends Model
         return $html;
     }
 
-    public function updateCssFromData()
+    public function updateCssFromData(): void
     {
         $dataArray = json_decode($this->data, true);
         if (isset($dataArray['styles']) && is_array($dataArray['styles'])) {
@@ -234,5 +377,28 @@ JSON;
     public function getJs()
     {
         return $this->js;
+    }
+
+    private function storePreviewImage(string $device, string $dataUrl): File
+    {
+        if (!preg_match('/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/', $dataUrl, $matches)) {
+            throw new \InvalidArgumentException('Ungültiges Preview-Format.');
+        }
+
+        $mimeType = strtolower((string) $matches[1]);
+        $binary = base64_decode(str_replace(' ', '+', (string) $matches[2]), true);
+
+        if ($binary === false) {
+            throw new \InvalidArgumentException('Ungültige Preview-Daten.');
+        }
+
+        return $this->storePreviewBinary($device, $binary, $mimeType);
+    }
+
+    private function purgePreviewFiles(): void
+    {
+        $this->previewFiles()->get()->each(function (File $file) {
+            $file->delete();
+        });
     }
 }

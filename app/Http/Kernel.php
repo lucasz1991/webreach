@@ -38,7 +38,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\CheckUserStatus::class,
-            \App\Http\Middleware\LogActivity::class,
+            // \App\Http\Middleware\LogActivity::class,
             \App\Http\Middleware\MaintenanceMode::class,
         ],
 

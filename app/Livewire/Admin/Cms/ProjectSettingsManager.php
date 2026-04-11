@@ -22,6 +22,7 @@ class ProjectSettingsManager extends Component
     public $lang;
     public $lock;
     public $webpages = [];
+    public $projectPreviewUrls = [];
 
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -43,6 +44,12 @@ class ProjectSettingsManager extends Component
     public function loadProject($projectId)
     {
         $project = PagebuilderProject::findOrFail($projectId);
+        $defaults = [
+            'desktop' => null,
+            'tablet' => null,
+            'mobile' => null,
+        ];
+
         $this->projectId = $project->id;
         $this->name = $project->name;
         $this->page = $project->page ?? [];
@@ -53,6 +60,7 @@ class ProjectSettingsManager extends Component
         $this->order_id = $project->order_id;
         $this->lang = $project->lang;
         $this->lock = $project->lock;
+        $this->projectPreviewUrls = array_merge($defaults, is_array($project->preview_urls) ? $project->preview_urls : []);
         $this->showModal = true;
     }
 
@@ -84,6 +92,7 @@ class ProjectSettingsManager extends Component
     public function closeModal()
     {
         $this->showModal = false;
+        $this->projectPreviewUrls = [];
     }
 
     public function render()

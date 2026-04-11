@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GeneratePagebuilderProjectPreviews;
 use App\Models\PagebuilderProject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class PagebuilderProjectController extends Controller
 {
@@ -19,9 +19,10 @@ class PagebuilderProjectController extends Controller
             $validated = $request->validate([
                 'id' => 'required',
                 'data' => 'required|json',
-                'html' => '',
+                'html' => 'nullable|string',
+                'generate_previews' => 'nullable|boolean',
             ]);
-            
+
             $project = PagebuilderProject::updateOrCreate(
                 ['id' => $validated['id']],
                 [
@@ -31,11 +32,30 @@ class PagebuilderProjectController extends Controller
                 ]
             );
 
+            $previewEnqueued = false;
+            if ((bool) ($validated['generate_previews'] ?? false)) {
+                try {
+                    GeneratePagebuilderProjectPreviews::dispatch($project->id, $request->getSchemeAndHttpHost());
+                    $previewEnqueued = true;
+
+                    Log::info('Preview-Erzeugung in Queue gestellt', [
+                        'project_id' => $project->id,
+                    ]);
+                } catch (\Throwable $previewException) {
+                    Log::warning('Preview-Erzeugung konnte nicht in Queue gestellt werden', [
+                        'project_id' => $project->id,
+                        'message' => $previewException->getMessage(),
+                    ]);
+                }
+            }
+
             Log::info('Projekt gespeichert', ['project_id' => $project->id, 'last_edited_by' => $project->last_edited_by]);
-            $project->updateProjekt();
+
             return response()->json([
                 'message' => 'Projekt gespeichert',
-                'project' => $project
+                'project' => $project->fresh(),
+                'preview_urls' => $project->fresh()->preview_urls,
+                'preview_enqueued' => $previewEnqueued,
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validierungsfehler beim Speichern', ['errors' => $e->errors()]);
@@ -52,6 +72,23 @@ class PagebuilderProjectController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function preview(Request $request, PagebuilderProject $project)
+    {
+        abort_unless($request->hasValidSignature(false), 403);
+
+        $project->refresh();
+
+        return response()->view('pagebuilder.project-preview', [
+            'project' => $project,
+            'device' => (string) $request->query('device', 'desktop'),
+            'projectMarkup' => preg_replace(
+                '/<style\b[^>]*>.*?<\/style>/is',
+                '',
+                (string) ($project->cleaned_html ?: $project->html)
+            ),
+        ]);
     }
 
 

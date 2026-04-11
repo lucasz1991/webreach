@@ -24,7 +24,7 @@ Alpine.plugin(sort);
 window.Swiper = Swiper;
 let pagebuilderModulePromise = null;
 let lmzBuilderAssetsPromise = null;
-const LMZ_BUILDER_VERSION = '20260410-1';
+const LMZ_BUILDER_VERSION = '20260411-2';
 
 function ensureFunctionArray(value) {
     return Array.isArray(value) ? value.filter((item) => typeof item === 'function') : [];

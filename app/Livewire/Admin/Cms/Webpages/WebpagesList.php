@@ -21,7 +21,7 @@ class WebpagesList extends Component
     public $icon, $is_active, $published_from, $published_until, $language;
     public $editingId = null;
     public $modalOpen = false;
-    public $page = null;
+    public $pagePreviewUrls = [];
 
     public function create()
     {
@@ -31,13 +31,14 @@ class WebpagesList extends Component
 
     public function edit($id)
     {
-        $this->page = WebPage::findOrFail($id);
-        $this->editingId = $this->page->id;
+        $page = WebPage::with('project')->findOrFail($id);
+        $this->editingId = $page->id;
 
-        $this->fill($this->page->toArray());
-        $this->custom_meta = !empty($this->page->custom_meta)
-            ? json_encode($this->page->custom_meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+        $this->fill($page->toArray());
+        $this->custom_meta = !empty($page->custom_meta)
+            ? json_encode($page->custom_meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
             : '';
+        $this->loadPagePreviewUrls($page);
 
         $this->modalOpen = true;
     }
@@ -202,7 +203,19 @@ class WebpagesList extends Component
         $this->is_active = true;
         $this->published_from = $this->published_until = null;
         $this->language = app()->getLocale();
-        $this->page = null;
+        $this->pagePreviewUrls = [];
+    }
+
+    private function loadPagePreviewUrls(?WebPage $page): void
+    {
+        $defaults = [
+            'desktop' => null,
+            'tablet' => null,
+            'mobile' => null,
+        ];
+
+        $previewUrls = $page?->project?->preview_urls ?? [];
+        $this->pagePreviewUrls = array_merge($defaults, is_array($previewUrls) ? $previewUrls : []);
     }
 
     public function render()

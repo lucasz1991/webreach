@@ -2,15 +2,16 @@
 
 namespace App\View\Components;
 
-use Illuminate\View\Component;
 use App\Models\PagebuilderProject;
+use App\Models\WebPage;
+use App\Services\WebPages\CurrentPageService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use App\Services\WebPages\CurrentPageService;
+use Illuminate\View\Component;
 
 class PagebuilderModule extends Component
 {
-    public string $page;        // "primärer" Slug (Top-Kandidat)
+    public string $page;
     public string $position;
     public $modules;
 
@@ -21,45 +22,67 @@ class PagebuilderModule extends Component
     ) {
         $this->position = $position;
 
-        // Kandidaten aus explizitem $page (falls gesetzt) ODER aus Request
         $candidates = $currentPage->candidates(null, $page);
         $this->page = $candidates[0] ?? 'start';
 
         $now = Carbon::now();
         $locale = app()->getLocale();
 
-        // Cache-Key inkl. Kandidaten (damit Query & Cache konsistent sind)
         $cacheKey = sprintf(
-            'pagebuilder_modules_%s_%s_%s',
+            'pagebuilder_modules_v3_%s_%s_%s_%s',
+            PagebuilderProject::renderCacheVersion(),
             sha1(implode('|', $candidates)),
             $position,
             $locale
         );
 
         $this->modules = Cache::remember($cacheKey, 60, function () use ($candidates, $position, $now, $locale) {
+            if ($position === 'page') {
+                $rank = array_flip($candidates);
+                $page = WebPage::query()
+                    ->with('project')
+                    ->whereIn('slug', $candidates)
+                    ->where('is_active', true)
+                    ->where(function ($query) use ($now) {
+                        $query->whereNull('published_from')->orWhere('published_from', '<=', $now);
+                    })
+                    ->where(function ($query) use ($now) {
+                        $query->whereNull('published_until')->orWhere('published_until', '>=', $now);
+                    })
+                    ->get()
+                    ->sortBy(fn (WebPage $page) => $rank[$page->slug] ?? PHP_INT_MAX)
+                    ->first();
+
+                if ($page?->project) {
+                    return collect([$page->project]);
+                }
+
+                return collect();
+            }
+
             return PagebuilderProject::query()
-                // Position (JSON enthält den String)
+                ->where(function ($query) {
+                    $query->where('type', 'module')
+                        ->orWhereNull('type')
+                        ->orWhere('type', '');
+                })
                 ->whereJsonContains('position', $position)
-                // Status
                 ->whereIn('status', [1, 3])
-                // Veröffentlichungsfenster
-                ->where(function ($q) use ($now) {
-                    $q->whereNull('published_from')->orWhere('published_from', '<=', $now);
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('published_from')->orWhere('published_from', '<=', $now);
                 })
-                ->where(function ($q) use ($now) {
-                    $q->whereNull('published_until')->orWhere('published_until', '>=', $now);
+                ->where(function ($query) use ($now) {
+                    $query->whereNull('published_until')->orWhere('published_until', '>=', $now);
                 })
-                // Sprache
-                ->where(function ($q) use ($locale) {
-                    $q->where('lang', $locale)
-                      ->orWhereNull('lang')
-                      ->orWhere('lang', '');
+                ->where(function ($query) use ($locale) {
+                    $query->where('lang', $locale)
+                        ->orWhereNull('lang')
+                        ->orWhere('lang', '');
                 })
-                // Seite: irgendein Kandidat ODER "all"
-                ->where(function ($q) use ($candidates) {
-                    $q->whereJsonContains('page', 'all');
+                ->where(function ($query) use ($candidates) {
+                    $query->whereJsonContains('page', 'all');
                     foreach ($candidates as $slug) {
-                        $q->orWhereJsonContains('page', $slug);
+                        $query->orWhereJsonContains('page', $slug);
                     }
                 })
                 ->orderBy('order_id', 'asc')

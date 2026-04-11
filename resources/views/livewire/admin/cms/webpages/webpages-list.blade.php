@@ -101,7 +101,7 @@
                                         </li>
                                         <li>
                                             <button wire:click="delete({{ $page->id }})" @click="open = false" class="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
-                                                LÃ¶schen
+                                                Löschen
                                             </button>
                                         </li>
                                     </ul>
@@ -131,8 +131,6 @@
                 <select wire:model="language" class="border bg-white rounded px-3 py-1 text-sm">
                     <option value="de">Deutsch</option>
                     <option value="en">Englisch</option>
-                    <option value="es">Spanisch</option>
-                    <option value="fr">FranzÃƒÂ¶sisch</option>
                 </select>
 
                 <!-- Status -->
@@ -158,6 +156,15 @@
                     <input type="text" wire:model="slug" class="w-full border rounded px-4 py-2">
                     @error('slug') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                 </div>
+            </div>
+
+            <!-- Image Previews -->
+            <div>
+                <x-pagebuilder-preview-grid
+                    :preview-urls="$pagePreviewUrls"
+                    :subject="$title ?: 'diese Seite'"
+                    :show-empty-hint="$editingId ? true : false"
+                />
             </div>
 
             <!-- Accordion -->
@@ -300,4 +307,3 @@
 
 
 </div>
-

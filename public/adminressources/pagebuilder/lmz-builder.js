@@ -1573,6 +1573,14 @@
         };
     }
 
+    function waitForNextPaint() {
+        return new Promise((resolve) => {
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(resolve);
+            });
+        });
+    }
+
     async function create(userOptions) {
         const options = deepMerge(DEFAULT_OPTIONS, userOptions || {});
         const configuredCanvasStyles = normalizeCanvasStyles([
@@ -1689,12 +1697,14 @@
                 const projectData = editor.getProjectData();
                 const html = editor.getHtml();
                 const css = editor.getCss();
+                const shouldGeneratePreviews = reason === 'manual' || reason === 'shortcut';
 
                 if (typeof options.storage.onSave === 'function') {
                     await options.storage.onSave({
                         project: projectData,
                         html,
                         css,
+                        generatePreviews: shouldGeneratePreviews,
                         reason,
                         editor,
                         projectId: options.projectId,
@@ -1706,6 +1716,9 @@
                     }
                     body.append('data', JSON.stringify(projectData));
                     body.append('html', '<style>' + css + '</style>' + html);
+                    if (shouldGeneratePreviews) {
+                        body.append('generate_previews', '1');
+                    }
 
                     const response = await fetch(options.endpoints.save, {
                         method: 'POST',

@@ -97,10 +97,6 @@ class CurrentPageService
             }
         }
 
-        if (!in_array('start', $candidates, true)) {
-            $candidates[] = 'start';
-        }
-
         return $candidates;
     }
 

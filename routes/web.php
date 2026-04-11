@@ -10,14 +10,15 @@ use App\Livewire\Admin\UserProfile;
 use App\Livewire\Admin\Users;
 use App\Livewire\AdminConfig;
 use App\Livewire\AdminDashboard;
-
 use App\Livewire\WebContentManager;
-use App\Livewire\Welcome;
 use App\Livewire\Admin\Cms\EditProject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', Welcome::class)->name('home');
+Route::get('/', [PageController::class, 'home'])->name('home');
+Route::get('/pagebuilder/preview/{project}', [PagebuilderProjectController::class, 'preview'])
+    ->middleware('signed:relative')
+    ->name('pagebuilder.preview.render');
 
 Route::post('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 

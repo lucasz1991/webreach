@@ -10,7 +10,6 @@ class EditProject extends Component
 {
     public $projectId;
     public $project;
-    private $grapejsLicenseKey;
 
     public $editModalOpen = false;
     public $projectName;
@@ -22,7 +21,6 @@ class EditProject extends Component
 
     public function mount($projectId = null)
     {
-        $this->grapejsLicenseKey = Setting::getValue('grapesjs', 'api_key') ?? false;
 
         if ($projectId) {
             $this->projectId = $projectId;
@@ -51,7 +49,6 @@ class EditProject extends Component
     {
         return view('livewire.admin.cms.edit-project', [
             'project' => $this->project,
-            'grapejsLicenseKey' => $this->grapejsLicenseKey,
         ])->layout('layouts.master');
     }
 }
