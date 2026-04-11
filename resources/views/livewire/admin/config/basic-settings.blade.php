@@ -146,13 +146,6 @@
                 <x-slot name="content">
                     <div class="grid gap-6 xl:grid-cols-[minmax(0,1.28fr)_minmax(320px,0.92fr)]">
                         <div class="space-y-4">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <h3 class="text-sm font-semibold text-slate-900">Live-Vorschau</h3>
-                                    <p class="text-sm text-slate-500">16:9 Mockup mit Footer, ohne Realtext und mit direkter Farbzuordnung.</p>
-                                </div>
-                                <span class="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Hover koppelt Liste und Vorschau</span>
-                            </div>
 
                             <div class="relative overflow-hidden rounded-[32px] border border-slate-200 bg-slate-50 p-3 shadow-[0_28px_70px_-30px_rgba(15,23,42,0.35)]">
                                 <div class="absolute inset-0 opacity-80" :style="{ background: 'radial-gradient(circle at top right, ' + hexToRgba(accentColor, 0.18) + ', transparent 30%), radial-gradient(circle at left bottom, ' + hexToRgba(primaryColor, 0.14) + ', transparent 34%)' }"></div>
@@ -236,10 +229,6 @@
                         </div>
 
                         <div class="space-y-2.5">
-                            <div>
-                                <h3 class="text-sm font-semibold text-slate-900">Farben feinjustieren</h3>
-                                <p class="text-sm text-slate-500">Kompakt im Standardzustand, mit `x-collapse` geöffnet bei Fokus oder Auswahl.</p>
-                            </div>
 
                             <div class="space-y-3">
                                 @foreach ($colorFields as $color)
