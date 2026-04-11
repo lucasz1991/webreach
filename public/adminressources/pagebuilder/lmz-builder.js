@@ -517,35 +517,316 @@
         return isPlainObject(value) ? value : null;
     }
 
-    function setupTabs(shell) {
-        const triggers = shell.querySelectorAll('[data-lmz-tab-trigger]');
+    function getShellIcon(name) {
+        const icons = {
+            brand:
+                '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+                '<path d="M4 6.75C4 5.784 4.784 5 5.75 5h4.5C11.216 5 12 5.784 12 6.75v4.5c0 .966-.784 1.75-1.75 1.75h-4.5A1.75 1.75 0 0 1 4 11.25v-4.5Z" stroke="currentColor" stroke-width="1.6"/>' +
+                '<path d="M12.75 12.75c0-.966.784-1.75 1.75-1.75h3.75c.966 0 1.75.784 1.75 1.75v5.5c0 .966-.784 1.75-1.75 1.75H14.5a1.75 1.75 0 0 1-1.75-1.75v-5.5Z" stroke="currentColor" stroke-width="1.6"/>' +
+                '<path d="M12.75 5.75A1.75 1.75 0 0 1 14.5 4h3.75A1.75 1.75 0 0 1 20 5.75v1.5A1.75 1.75 0 0 1 18.25 9H14.5a1.75 1.75 0 0 1-1.75-1.75v-1.5Z" fill="currentColor" opacity=".22"/>' +
+                '<path d="M4 16.5c0-.966.784-1.75 1.75-1.75h2.5c.966 0 1.75.784 1.75 1.75v1.75c0 .966-.784 1.75-1.75 1.75h-2.5A1.75 1.75 0 0 1 4 18.25V16.5Z" fill="currentColor"/>' +
+                '</svg>',
+            undo:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="M7.75 5.25 4.25 8.5l3.5 3.25" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '<path d="M5 8.5h6.5a4 4 0 1 1 0 8H9.25" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '</svg>',
+            redo:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="m12.25 5.25 3.5 3.25-3.5 3.25" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '<path d="M15 8.5H8.5a4 4 0 1 0 0 8h2.25" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '</svg>',
+            preview:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="M1.75 10s3.25-5 8.25-5 8.25 5 8.25 5-3.25 5-8.25 5-8.25-5-8.25-5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '<circle cx="10" cy="10" r="2.35" stroke="currentColor" stroke-width="1.7"/>' +
+                '</svg>',
+            assets:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<rect x="2.75" y="3.25" width="14.5" height="13.5" rx="2.25" stroke="currentColor" stroke-width="1.7"/>' +
+                '<path d="m5.25 13.25 3-3 2.25 2.25 2.75-3.25 1.5 1.75" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '<circle cx="7" cy="7.25" r="1.15" fill="currentColor"/>' +
+                '</svg>',
+            save:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="M4 3.25h9.75L16.75 6v10.75H4V3.25Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>' +
+                '<path d="M6.75 3.25V7h6V3.25" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>' +
+                '<path d="M6.75 16.25V11.5h7v4.75" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>' +
+                '</svg>',
+            blocks:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<rect x="2.75" y="2.75" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/>' +
+                '<rect x="11.25" y="2.75" width="6" height="6" rx="1.5" fill="currentColor" opacity=".2"/>' +
+                '<rect x="11.25" y="11.25" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/>' +
+                '<rect x="2.75" y="11.25" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/>' +
+                '</svg>',
+            layers:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="m10 3 7 3.5-7 3.5-7-3.5L10 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' +
+                '<path d="m3 10 7 3.5 7-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '<path d="m3 13.5 7 3.5 7-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '</svg>',
+            styles:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="M4.5 5.25h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>' +
+                '<path d="M4.5 10h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>' +
+                '<path d="M4.5 14.75h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>' +
+                '<circle cx="14.25" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>' +
+                '<circle cx="12.75" cy="14.75" r="2" fill="currentColor" opacity=".24"/>' +
+                '</svg>',
+            traits:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="M10 2.75 3.75 6.25v7.5L10 17.25l6.25-3.5v-7.5L10 2.75Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>' +
+                '<path d="M10 7.25v5.5M7.25 10h5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
+                '</svg>',
+            classes:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="M3.75 6.25h8.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
+                '<path d="M3.75 10h12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
+                '<path d="M3.75 13.75h9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>' +
+                '<circle cx="14.75" cy="6.25" r="1.75" fill="currentColor" opacity=".22"/>' +
+                '<circle cx="16.25" cy="13.75" r="1.75" stroke="currentColor" stroke-width="1.5"/>' +
+                '</svg>',
+            chevron:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '</svg>',
+            close:
+                '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+                '<path d="m6 6 8 8M14 6l-8 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>' +
+                '</svg>',
+        };
 
-        function activate(tabValue) {
-            const parts = tabValue.split(':');
-            const group = parts[0];
+        return icons[name] || '';
+    }
 
-            triggers.forEach((trigger) => {
-                trigger.classList.toggle('is-active', trigger.dataset.lmzTabTrigger === tabValue);
-            });
+    function createActionButton(action, label, icon, options) {
+        const config = options || {};
+        const classes = ['lmz-builder__action'];
 
-            shell.querySelectorAll('[data-lmz-tab-panel]').forEach((panel) => {
-                const panelGroup = panel.dataset.lmzTabPanel.split(':')[0];
-                const shouldShow = panel.dataset.lmzTabPanel === tabValue && panelGroup === group;
-                panel.classList.toggle('is-active', shouldShow);
-            });
+        if (config.primary) {
+            classes.push('is-primary');
         }
 
-        triggers.forEach((trigger) => {
-            trigger.addEventListener('click', () => {
-                activate(trigger.dataset.lmzTabTrigger);
+        if (config.iconOnly) {
+            classes.push('is-icon-only');
+        }
+
+        return (
+            '<button type="button" class="' +
+            classes.join(' ') +
+            '" data-lmz-action="' +
+            action +
+            '" aria-label="' +
+            label +
+            '">' +
+            '<span class="lmz-builder__action-icon">' +
+            getShellIcon(icon) +
+            '</span>' +
+            (config.iconOnly
+                ? ''
+                : '<span class="lmz-builder__action-label">' + label + '</span>') +
+            '</button>'
+        );
+    }
+
+    function createPanelToggleButton(config) {
+        return (
+            '<button type="button" class="lmz-builder__action lmz-builder__action--panel" data-lmz-panel-toggle="' +
+            config.id +
+            '" data-lmz-panel-group="' +
+            config.group +
+            '" aria-haspopup="dialog" aria-expanded="false">' +
+            '<span class="lmz-builder__action-icon">' +
+            getShellIcon(config.icon) +
+            '</span>' +
+            '<span class="lmz-builder__action-label">' +
+            config.label +
+            '</span>' +
+            '</button>'
+        );
+    }
+
+    function createPopoverPanel(config) {
+        return (
+            '<section class="lmz-builder__popover-panel" data-lmz-popover-panel="' +
+            config.id +
+            '" hidden>' +
+            '<header class="lmz-builder__popover-head">' +
+            '<div class="lmz-builder__popover-title">' +
+            '<span class="lmz-builder__popover-icon">' +
+            getShellIcon(config.icon) +
+            '</span>' +
+            '<strong>' +
+            config.label +
+            '</strong>' +
+            '</div>' +
+            '<button type="button" class="lmz-builder__popover-close" data-lmz-panel-close="' +
+            config.group +
+            '" aria-label="' +
+            config.label +
+            ' schliessen">' +
+            getShellIcon('close') +
+            '</button>' +
+            '</header>' +
+            '<div class="lmz-builder__popover-body">' +
+            '<div class="lmz-builder__mount" data-lmz-mount="' +
+            config.mount +
+            '"></div>' +
+            '</div>' +
+            '</section>'
+        );
+    }
+
+    function createPopover(side, sections) {
+        return (
+            '<aside class="lmz-builder__popover lmz-builder__popover--' +
+            side +
+            '" data-lmz-popover="' +
+            side +
+            '" hidden>' +
+            sections.map((section) => createPopoverPanel(section)).join('') +
+            '</aside>'
+        );
+    }
+
+    function setupPopovers(shell) {
+        const buttons = Array.from(shell.querySelectorAll('[data-lmz-panel-toggle]'));
+        const panels = Array.from(shell.querySelectorAll('[data-lmz-popover-panel]'));
+        const popovers = Array.from(shell.querySelectorAll('[data-lmz-popover]'));
+        const closeButtons = Array.from(shell.querySelectorAll('[data-lmz-panel-close]'));
+        const state = {
+            left: null,
+            right: null,
+        };
+
+        const getGroup = (value) => String(value || '').split(':')[0];
+
+        function renderGroup(group) {
+            const activeValue = state[group];
+
+            buttons.forEach((button) => {
+                if (button.dataset.lmzPanelGroup !== group) {
+                    return;
+                }
+
+                const isActive = button.dataset.lmzPanelToggle === activeValue;
+                button.classList.toggle('is-active', isActive);
+                button.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+            });
+
+            panels.forEach((panel) => {
+                if (getGroup(panel.dataset.lmzPopoverPanel) !== group) {
+                    return;
+                }
+
+                const isActive = panel.dataset.lmzPopoverPanel === activeValue;
+                panel.classList.toggle('is-active', isActive);
+                panel.hidden = !isActive;
+            });
+
+            popovers.forEach((popover) => {
+                if (popover.dataset.lmzPopover !== group) {
+                    return;
+                }
+
+                const isOpen = !!activeValue;
+                popover.classList.toggle('is-open', isOpen);
+                popover.hidden = !isOpen;
+            });
+
+            shell.classList.toggle('has-' + group + '-popover', !!activeValue);
+        }
+
+        function open(value) {
+            const group = getGroup(value);
+            state[group] = value;
+            renderGroup(group);
+        }
+
+        function closeGroup(group) {
+            state[group] = null;
+            renderGroup(group);
+        }
+
+        function toggle(value) {
+            const group = getGroup(value);
+            if (state[group] === value) {
+                closeGroup(group);
+                return;
+            }
+
+            open(value);
+        }
+
+        function closeAll() {
+            closeGroup('left');
+            closeGroup('right');
+        }
+
+        const pointerHandler = (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) {
+                return;
+            }
+
+            if (target.closest('[data-lmz-panel-toggle]') || target.closest('.lmz-builder__popover') || target.closest('[data-lmz-action="selection"]')) {
+                return;
+            }
+
+            closeAll();
+        };
+
+        const keyHandler = (event) => {
+            if (event.key === 'Escape') {
+                closeAll();
+            }
+        };
+
+        buttons.forEach((button) => {
+            button.addEventListener('click', () => {
+                toggle(button.dataset.lmzPanelToggle);
             });
         });
 
-        activate('left:blocks');
-        activate('right:styles');
+        closeButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                closeGroup(button.dataset.lmzPanelClose);
+            });
+        });
+
+        document.addEventListener('pointerdown', pointerHandler);
+        document.addEventListener('keydown', keyHandler);
+
+        renderGroup('left');
+        renderGroup('right');
+
+        return {
+            open,
+            toggle,
+            closeGroup,
+            closeAll,
+            getActive(group) {
+                return state[group] || null;
+            },
+            destroy() {
+                document.removeEventListener('pointerdown', pointerHandler);
+                document.removeEventListener('keydown', keyHandler);
+            },
+        };
     }
 
     function createShell(root) {
+        const leftSections = [
+            { id: 'left:blocks', group: 'left', mount: 'blocks', icon: 'blocks', label: 'Bausteine' },
+            { id: 'left:layers', group: 'left', mount: 'layers', icon: 'layers', label: 'Ebenen' },
+        ];
+        const rightSections = [
+            { id: 'right:styles', group: 'right', mount: 'styles', icon: 'styles', label: 'Stile' },
+            { id: 'right:traits', group: 'right', mount: 'traits', icon: 'traits', label: 'Eigenschaften' },
+            { id: 'right:classes', group: 'right', mount: 'classes', icon: 'classes', label: 'Klassen' },
+        ];
+
         root.classList.add('lmz-builder-host');
         root.innerHTML = '';
 
@@ -554,54 +835,48 @@
         shell.innerHTML =
             '<div class="lmz-builder__topbar">' +
             '<div class="lmz-builder__actions">' +
-            '<button type="button" data-lmz-action="undo">Undo</button>' +
-            '<button type="button" data-lmz-action="redo">Redo</button>' +
-            '<button type="button" data-lmz-action="preview">Preview</button>' +
-            '<button type="button" data-lmz-action="assets">Assets</button>' +
-            '<button type="button" data-lmz-action="save" class="is-primary">Speichern</button>' +
+            createActionButton('undo', 'Undo', 'undo', { iconOnly: true }) +
+            createActionButton('redo', 'Redo', 'redo', { iconOnly: true }) +
+            createActionButton('preview', 'Vorschau', 'preview', { iconOnly: true }) +
+            createActionButton('assets', 'Medien', 'assets', { iconOnly: true }) +
+            createActionButton('save', 'Speichern', 'save', { primary: true }) +
             '</div>' +
+            '<div class="lmz-builder__panel-actions lmz-builder__panel-actions--left">' +
+            leftSections.map((section) => createPanelToggleButton(section)).join('') +
+            '</div>' +
+            '<div class="lmz-builder__panel-actions lmz-builder__panel-actions--right">' +
+            rightSections.map((section) => createPanelToggleButton(section)).join('') +
+            '</div>' +
+            '<div class="lmz-builder__meta">' +
+            '<button type="button" class="lmz-builder__selection is-empty" data-lmz-action="selection">Keine Auswahl</button>' +
             '<div class="lmz-builder__status" data-lmz-status data-state="muted">Initialisierung...</div>' +
             '</div>' +
-            '<div class="lmz-builder__body">' +
-            '<aside class="lmz-builder__sidebar lmz-builder__sidebar--left">' +
-            '<div class="lmz-builder__tabs">' +
-            '<button type="button" class="is-active" data-lmz-tab-trigger="left:blocks">Blocks</button>' +
-            '<button type="button" data-lmz-tab-trigger="left:layers">Layers</button>' +
             '</div>' +
-            '<div class="lmz-builder__panels">' +
-            '<div class="lmz-builder__panel is-active" data-lmz-tab-panel="left:blocks"><div class="lmz-builder__mount" data-lmz-mount="blocks"></div></div>' +
-            '<div class="lmz-builder__panel" data-lmz-tab-panel="left:layers"><div class="lmz-builder__mount" data-lmz-mount="layers"></div></div>' +
-            '</div>' +
-            '</aside>' +
+            '<div class="lmz-builder__viewport">' +
             '<main class="lmz-builder__main">' +
+            '<div class="lmz-builder__canvas-shell">' +
             '<div class="lmz-builder__canvas" data-lmz-mount="canvas"></div>' +
+            '</div>' +
             '</main>' +
-            '<aside class="lmz-builder__sidebar lmz-builder__sidebar--right">' +
-            '<div class="lmz-builder__tabs">' +
-            '<button type="button" class="is-active" data-lmz-tab-trigger="right:styles">Styles</button>' +
-            '<button type="button" data-lmz-tab-trigger="right:traits">Properties</button>' +
-            '</div>' +
-            '<div class="lmz-builder__panels">' +
-            '<div class="lmz-builder__panel is-active" data-lmz-tab-panel="right:styles">' +
-            '<div class="lmz-builder__mount" data-lmz-mount="styles"></div>' +
-            '</div>' +
-            '<div class="lmz-builder__panel" data-lmz-tab-panel="right:traits"><div class="lmz-builder__mount" data-lmz-mount="traits"></div></div>' +
-            '</div>' +
-            '</aside>' +
+            createPopover('left', leftSections) +
+            createPopover('right', rightSections) +
             '</div>' +
             '<input type="file" data-lmz-upload-input multiple hidden />';
 
         root.appendChild(shell);
-        setupTabs(shell);
+        const panels = setupPopovers(shell);
 
         return {
             shell,
+            panels,
             status: shell.querySelector('[data-lmz-status]'),
+            selection: shell.querySelector('[data-lmz-action="selection"]'),
             canvas: shell.querySelector('[data-lmz-mount="canvas"]'),
             blocks: shell.querySelector('[data-lmz-mount="blocks"]'),
             layers: shell.querySelector('[data-lmz-mount="layers"]'),
             styles: shell.querySelector('[data-lmz-mount="styles"]'),
             traits: shell.querySelector('[data-lmz-mount="traits"]'),
+            classes: shell.querySelector('[data-lmz-mount="classes"]'),
             uploadInput: shell.querySelector('[data-lmz-upload-input]'),
         };
     }
@@ -613,6 +888,57 @@
 
         refs.status.textContent = text;
         refs.status.dataset.state = state || 'muted';
+    }
+
+    function getSelectionLabel(component) {
+        if (!component) {
+            return 'Keine Auswahl';
+        }
+
+        const attributes = typeof component.getAttributes === 'function' ? component.getAttributes() || {} : {};
+        const explicitName = attributes['data-gjs-name'] || attributes['aria-label'] || attributes.title || null;
+        const type = typeof component.get === 'function' ? component.get('type') || component.get('tagName') : null;
+        const fallback = explicitName || (typeof component.getName === 'function' ? component.getName() : null) || type || 'Element';
+        const normalized = String(fallback)
+            .replace(/[-_]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        const label = normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'Element';
+
+        return attributes.id ? label + ' #' + attributes.id : label;
+    }
+
+    function syncShellState(editor, refs) {
+        if (!editor || !refs?.shell) {
+            return;
+        }
+
+        const selected = typeof editor.getSelected === 'function' ? editor.getSelected() : null;
+
+        if (refs.selection) {
+            refs.selection.textContent = getSelectionLabel(selected);
+            refs.selection.classList.toggle('is-empty', !selected);
+        }
+
+        const previewActive = !!editor.Commands?.isActive?.('core:preview');
+        const previewButton = refs.shell.querySelector('[data-lmz-action="preview"]');
+        if (previewButton) {
+            previewButton.classList.toggle('is-active', previewActive);
+        }
+
+        refs.shell.classList.toggle('is-preview', previewActive);
+
+        const undoManager = editor.UndoManager;
+        const undoButton = refs.shell.querySelector('[data-lmz-action="undo"]');
+        const redoButton = refs.shell.querySelector('[data-lmz-action="redo"]');
+
+        if (undoButton && undoManager?.isAvailable) {
+            undoButton.disabled = !undoManager.isAvailable('undo');
+        }
+
+        if (redoButton && undoManager?.isAvailable) {
+            redoButton.disabled = !undoManager.isAvailable('redo');
+        }
     }
 
     function getFirstChildComponent(wrapper) {
@@ -1627,7 +1953,7 @@
                 panels: { defaults: [] },
                 blockManager: { appendTo: refs.blocks },
                 layerManager: { appendTo: refs.layers },
-                selectorManager: { componentFirst: true },
+                selectorManager: { componentFirst: true, appendTo: refs.classes },
                 styleManager: deepMerge({ appendTo: refs.styles, custom: false }, options.styleManager),
                 traitManager: { appendTo: refs.traits },
                 canvas: { styles: [] },
@@ -1642,7 +1968,7 @@
 
         const editor = grapesjs.init(grapesOptions);
         const canvasStyles = configuredCanvasStyles;
-        dedupeClassManagerUis(refs.styles);
+        dedupeClassManagerUis(refs.classes || refs.styles);
 
         if (options.blocks.addDefault && editor.BlockManager.getAll().length === 0) {
             addDefaultBlocks(editor);
@@ -1744,6 +2070,9 @@
                 setStatus(refs, 'Speichern fehlgeschlagen', 'error');
             } finally {
                 state.saveInFlight = false;
+                if (typeof syncEditorShell === 'function') {
+                    syncEditorShell();
+                }
                 if (state.saveQueued && api) {
                     state.saveQueued = false;
                     api.save('queued');
@@ -1756,7 +2085,7 @@
             ensureCanvasStyles(editor, canvasStyles);
             window.setTimeout(() => {
                 selectInitialComponent(editor);
-                dedupeClassManagerUis(refs.styles);
+                dedupeClassManagerUis(refs.classes || refs.styles);
             }, 0);
         };
 
@@ -1816,6 +2145,7 @@
                 state.destroyed = true;
                 stopCanvasStyleSync();
                 stopSpacingEditor();
+                refs.panels?.destroy?.();
                 if (state.autosaveTimer) {
                     window.clearInterval(state.autosaveTimer);
                 }
@@ -1825,16 +2155,30 @@
             },
         };
 
-        refs.shell.querySelector('[data-lmz-action="undo"]').addEventListener('click', () => editor.runCommand('core:undo'));
-        refs.shell.querySelector('[data-lmz-action="redo"]').addEventListener('click', () => editor.runCommand('core:redo'));
+        const syncEditorShell = () => syncShellState(editor, refs);
+
+        refs.shell.querySelector('[data-lmz-action="undo"]').addEventListener('click', () => {
+            editor.runCommand('core:undo');
+            window.requestAnimationFrame(syncEditorShell);
+        });
+
+        refs.shell.querySelector('[data-lmz-action="redo"]').addEventListener('click', () => {
+            editor.runCommand('core:redo');
+            window.requestAnimationFrame(syncEditorShell);
+        });
         refs.shell.querySelector('[data-lmz-action="save"]').addEventListener('click', () => api.save('manual'));
         refs.shell.querySelector('[data-lmz-action="assets"]').addEventListener('click', () => refs.uploadInput.click());
+        refs.selection.addEventListener('click', () => {
+            refs.panels.toggle(editor.getSelected() ? 'right:traits' : 'right:styles');
+        });
         refs.shell.querySelector('[data-lmz-action="preview"]').addEventListener('click', () => {
             if (editor.Commands.isActive('core:preview')) {
                 editor.stopCommand('core:preview');
             } else {
                 editor.runCommand('core:preview');
             }
+
+            window.requestAnimationFrame(syncEditorShell);
         });
 
         refs.uploadInput.addEventListener('change', async (event) => {
@@ -1858,9 +2202,20 @@
 
         editor.on('update', () => {
             state.dirtyCount += 1;
+            syncEditorShell();
             if (options.autosave.enabled && state.dirtyCount >= options.autosave.changesBeforeSave) {
                 api.save('autosave-threshold');
             }
+        });
+
+        editor.on('component:selected', () => {
+            if (!refs.panels.getActive('right')) {
+                refs.panels.open('right:styles');
+            }
+        });
+
+        ['load', 'component:selected', 'component:deselected', 'component:update', 'component:styleUpdate', 'undo', 'redo'].forEach((eventName) => {
+            editor.on(eventName, syncEditorShell);
         });
 
         stopCanvasStyleSync = startCanvasStyleSync(editor, canvasStyles);
@@ -1885,6 +2240,7 @@
 
         await api.load();
         ensureCanvasStyles(editor, canvasStyles);
+        syncEditorShell();
 
         return api;
     }
