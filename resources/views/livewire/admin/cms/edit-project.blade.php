@@ -24,7 +24,7 @@
         </div>
     @endif
 
-    <div class="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_24px_60px_-36px_rgba(15,23,42,0.25)]">
+    <div class="">
         <div
             x-effect="setTimeout(() => { if (typeof window.initLMZBuilder === 'function') { window.initLMZBuilder(); } }, 300)"
             id="studio-editor"
