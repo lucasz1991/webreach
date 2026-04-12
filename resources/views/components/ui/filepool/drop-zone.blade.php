@@ -31,6 +31,9 @@
       window.addEventListener('filepool:saved', (e) => {
         if (e?.detail?.model === @js($model)) this.resetDZ();
       });
+      window.addEventListener('filepool:reset', (e) => {
+        if (e?.detail?.model === @js($model)) this.resetDZ();
+      });
 
       // multiple-Attribut am Input setzen + active-Scope setzen, wenn dieses Input benutzt wird
       this.$nextTick(() => {

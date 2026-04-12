@@ -79,6 +79,32 @@ class BasicSettings extends Component
         session()->flash('success', 'Einstellungen erfolgreich gespeichert.');
     }
 
+    public function removeBrandingImage(string $property): void
+    {
+        $settingKey = $this->brandingSettingKey($property);
+        $previewProperty = $property . 'Preview';
+
+        if (!property_exists($this, $property) || !property_exists($this, $previewProperty) || !$settingKey) {
+            return;
+        }
+
+        // If a new temporary file is selected, only clear the pending upload.
+        if ($this->{$property}) {
+            $this->{$property} = null;
+            $this->dispatch('filepool:saved', model: $property);
+            return;
+        }
+
+        $oldPath = Setting::getValueUncached('base', $settingKey);
+        if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        Setting::setValue('base', $settingKey, null);
+        $this->{$previewProperty} = null;
+        $this->dispatch('filepool:saved', model: $property);
+    }
+
     protected function rules(): array
     {
         $rules = [
@@ -130,6 +156,17 @@ class BasicSettings extends Component
         Setting::setValue('base', $settingKey, $path);
         $this->{$property . 'Preview'} = Storage::disk('public')->url($path);
         $this->{$property} = null;
+        $this->dispatch('filepool:saved', model: $property);
+    }
+
+    protected function brandingSettingKey(string $property): ?string
+    {
+        return [
+            'favicon' => 'favicon',
+            'logoSquare' => 'logo_square',
+            'logoHorizontal' => 'logo_horizontal',
+            'logoVertical' => 'logo_vertical',
+        ][$property] ?? null;
     }
 
     protected function storedImageUrl(string $settingKey): ?string

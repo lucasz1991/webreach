@@ -35,11 +35,6 @@
     display: grid;
     grid-template-rows: 56px minmax(0, 1fr);
     height: 100%;
-    overflow: hidden;
-    border: 1px solid var(--lmz-border);
-    border-radius: 22px;
-    background: var(--lmz-bg);
-    box-shadow: var(--lmz-shadow);
     font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
@@ -49,8 +44,6 @@
     flex-wrap: wrap;
     gap: 10px;
     padding: 10px 12px;
-    border-bottom: 1px solid var(--lmz-border-soft);
-    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
 }
 
