@@ -184,6 +184,8 @@ class PagebuilderProjectPreviewService
             $candidates[] = '/usr/bin/node';
             $candidates[] = '/usr/local/bin/node';
             $candidates[] = '/opt/homebrew/bin/node';
+            $candidates[] = '/opt/plesk/node/current/bin/node';
+            $candidates = array_merge($candidates, $this->versionedNodeCandidates('/opt/plesk/node/*/bin/node'));
         }
 
         return array_values(array_unique(array_filter($candidates)));
@@ -250,9 +252,35 @@ class PagebuilderProjectPreviewService
 
     private function exampleNodeBinaryPath(): string
     {
+        if (!$this->runningOnWindows()) {
+            foreach ([
+                '/opt/plesk/node/current/bin/node',
+                ...$this->versionedNodeCandidates('/opt/plesk/node/*/bin/node'),
+                '/usr/bin/node',
+            ] as $candidate) {
+                if (is_file($candidate)) {
+                    return $candidate;
+                }
+            }
+        }
+
         return $this->runningOnWindows()
             ? 'C:\\Program Files\\nodejs\\node.exe'
             : '/usr/bin/node';
+    }
+
+    private function versionedNodeCandidates(string $pattern): array
+    {
+        $candidates = glob($pattern) ?: [];
+
+        usort($candidates, function (string $left, string $right): int {
+            $leftVersion = basename(dirname(dirname($left)));
+            $rightVersion = basename(dirname(dirname($right)));
+
+            return version_compare($rightVersion, $leftVersion);
+        });
+
+        return array_values(array_filter($candidates, 'is_file'));
     }
 
     private function runningOnWindows(): bool
