@@ -6,6 +6,7 @@ use App\Models\PagebuilderProject;
 use Illuminate\Support\Facades\File as FileFacade;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Symfony\Component\Process\ExecutableFinder;
 use Symfony\Component\Process\Process;
 
 class PagebuilderProjectPreviewService
@@ -51,10 +52,12 @@ class PagebuilderProjectPreviewService
                 ];
             }
 
+            $nodeBinary = $this->resolveNodeBinary();
+
             $process = new Process(
-                [$this->resolveNodeBinary(), $scriptPath, json_encode($jobs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)],
+                [$nodeBinary, $scriptPath, json_encode($jobs, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)],
                 base_path(),
-                $this->buildProcessEnvironment($runtimeTempDir),
+                $this->buildProcessEnvironment($runtimeTempDir, $nodeBinary),
                 null,
                 180
             );
@@ -99,69 +102,162 @@ class PagebuilderProjectPreviewService
 
     private function resolveNodeBinary(): string
     {
-        $candidates = array_filter([
-            env('PAGEBUILDER_NODE_BINARY'),
-            'node',
-            'C:\\Program Files\\nodejs\\node.exe',
-            'C:\\Program Files (x86)\\nodejs\\node.exe',
-        ]);
+        $configuredBinary = trim((string) env('PAGEBUILDER_NODE_BINARY', ''));
+        $finder = new ExecutableFinder();
 
-        foreach ($candidates as $candidate) {
-            if ($candidate === 'node') {
-                try {
-                    $process = new Process([$candidate, '--version'], base_path(), null, null, 10);
-                    $process->mustRun();
-
-                    return $candidate;
-                } catch (\Throwable $e) {
-                    continue;
-                }
+        if ($configuredBinary !== '') {
+            $resolvedConfiguredBinary = $this->resolveBinaryCandidate($configuredBinary, $finder);
+            if ($resolvedConfiguredBinary !== null) {
+                return $resolvedConfiguredBinary;
             }
 
-            if (is_file($candidate)) {
-                return $candidate;
+            throw new \RuntimeException(sprintf(
+                'Node.js wurde für die Preview-Erzeugung nicht gefunden. Der konfigurierte Wert "%s" aus PAGEBUILDER_NODE_BINARY konnte nicht verwendet werden.',
+                $configuredBinary
+            ));
+        }
+
+        foreach ($this->nodeBinaryCandidates() as $candidate) {
+            $resolvedBinary = $this->resolveBinaryCandidate($candidate, $finder);
+            if ($resolvedBinary !== null) {
+                return $resolvedBinary;
             }
         }
 
-        throw new \RuntimeException(
-            'Node.js wurde für die Preview-Erzeugung nicht gefunden. Setze PAGEBUILDER_NODE_BINARY in der .env, z. B. auf C:\\Program Files\\nodejs\\node.exe'
-        );
+        throw new \RuntimeException(sprintf(
+            'Node.js wurde für die Preview-Erzeugung nicht gefunden. Installiere Node.js oder setze PAGEBUILDER_NODE_BINARY in der .env, z. B. auf %s',
+            $this->exampleNodeBinaryPath()
+        ));
     }
 
-    private function buildProcessEnvironment(string $runtimeTempDir): array
+    private function buildProcessEnvironment(string $runtimeTempDir, string $nodeBinary): array
     {
-        $nodeBinary = $this->resolveNodeBinary();
-        $nodeDir = $nodeBinary === 'node' ? null : dirname($nodeBinary);
-        $windowsDir = getenv('WINDIR') ?: getenv('SystemRoot') ?: 'C:\\Windows';
-        $system32Dir = $windowsDir . '\\System32';
-
         $existingPath = (string) (getenv('PATH') ?: ($_SERVER['PATH'] ?? $_ENV['PATH'] ?? ''));
         $pathSegments = array_filter([
-            $nodeDir,
-            $system32Dir,
-            $windowsDir,
-            $system32Dir . '\\Wbem',
-            $system32Dir . '\\WindowsPowerShell\\v1.0',
+            $this->resolveBinaryDirectory($nodeBinary),
             $existingPath,
         ]);
 
-        $homeDir = getenv('USERPROFILE') ?: ($_SERVER['USERPROFILE'] ?? $_ENV['USERPROFILE'] ?? storage_path('app/tmp/puppeteer-home'));
+        $homeDir = $this->resolveHomeDirectory($runtimeTempDir);
         FileFacade::ensureDirectoryExists($homeDir);
         FileFacade::ensureDirectoryExists($runtimeTempDir);
 
-        return array_filter([
+        $environment = [
             'PATH' => implode(PATH_SEPARATOR, $pathSegments),
-            'TEMP' => $runtimeTempDir,
-            'TMP' => $runtimeTempDir,
             'TMPDIR' => $runtimeTempDir,
             'HOME' => $homeDir,
-            'USERPROFILE' => $homeDir,
-            'LOCALAPPDATA' => getenv('LOCALAPPDATA') ?: ($_SERVER['LOCALAPPDATA'] ?? $_ENV['LOCALAPPDATA'] ?? $runtimeTempDir),
-            'APPDATA' => getenv('APPDATA') ?: ($_SERVER['APPDATA'] ?? $_ENV['APPDATA'] ?? $runtimeTempDir),
-            'SystemRoot' => $windowsDir,
-            'WINDIR' => $windowsDir,
-            'ComSpec' => getenv('ComSpec') ?: ($_SERVER['ComSpec'] ?? $_ENV['ComSpec'] ?? ($system32Dir . '\\cmd.exe')),
-        ], static fn ($value) => is_string($value) && $value !== '');
+            'TEMP' => $runtimeTempDir,
+            'TMP' => $runtimeTempDir,
+        ];
+
+        if ($this->runningOnWindows()) {
+            $windowsDir = getenv('WINDIR') ?: getenv('SystemRoot') ?: 'C:\\Windows';
+            $system32Dir = $windowsDir . '\\System32';
+
+            $environment['PATH'] = implode(PATH_SEPARATOR, array_filter([
+                $this->resolveBinaryDirectory($nodeBinary),
+                $system32Dir,
+                $windowsDir,
+                $system32Dir . '\\Wbem',
+                $system32Dir . '\\WindowsPowerShell\\v1.0',
+                $existingPath,
+            ]));
+            $environment['USERPROFILE'] = $homeDir;
+            $environment['LOCALAPPDATA'] = getenv('LOCALAPPDATA') ?: ($_SERVER['LOCALAPPDATA'] ?? $_ENV['LOCALAPPDATA'] ?? $runtimeTempDir);
+            $environment['APPDATA'] = getenv('APPDATA') ?: ($_SERVER['APPDATA'] ?? $_ENV['APPDATA'] ?? $runtimeTempDir);
+            $environment['SystemRoot'] = $windowsDir;
+            $environment['WINDIR'] = $windowsDir;
+            $environment['ComSpec'] = getenv('ComSpec') ?: ($_SERVER['ComSpec'] ?? $_ENV['ComSpec'] ?? ($system32Dir . '\\cmd.exe'));
+        }
+
+        return array_filter($environment, static fn ($value) => is_string($value) && $value !== '');
+    }
+
+    private function nodeBinaryCandidates(): array
+    {
+        $candidates = ['node'];
+
+        if ($this->runningOnWindows()) {
+            $candidates[] = 'C:\\Program Files\\nodejs\\node.exe';
+            $candidates[] = 'C:\\Program Files (x86)\\nodejs\\node.exe';
+        } else {
+            $candidates[] = '/usr/bin/node';
+            $candidates[] = '/usr/local/bin/node';
+            $candidates[] = '/opt/homebrew/bin/node';
+        }
+
+        return array_values(array_unique(array_filter($candidates)));
+    }
+
+    private function resolveBinaryCandidate(string $candidate, ExecutableFinder $finder): ?string
+    {
+        $candidate = trim($candidate);
+        if ($candidate === '') {
+            return null;
+        }
+
+        if ($this->isBinaryUsable($candidate)) {
+            return $candidate;
+        }
+
+        $resolvedCandidate = $finder->find($candidate);
+        if (is_string($resolvedCandidate) && $resolvedCandidate !== '' && $this->isBinaryUsable($resolvedCandidate)) {
+            return $resolvedCandidate;
+        }
+
+        return null;
+    }
+
+    private function isBinaryUsable(string $binary): bool
+    {
+        try {
+            $process = new Process([$binary, '--version'], base_path(), null, null, 10);
+            $process->mustRun();
+
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private function resolveBinaryDirectory(string $binary): ?string
+    {
+        if (!str_contains($binary, '/') && !str_contains($binary, '\\')) {
+            return null;
+        }
+
+        $directory = dirname($binary);
+
+        return is_dir($directory) ? $directory : null;
+    }
+
+    private function resolveHomeDirectory(string $runtimeTempDir): string
+    {
+        $homeDir = getenv('HOME') ?: ($_SERVER['HOME'] ?? $_ENV['HOME'] ?? null);
+        if (is_string($homeDir) && $homeDir !== '') {
+            return $homeDir;
+        }
+
+        if ($this->runningOnWindows()) {
+            $homeDir = getenv('USERPROFILE') ?: ($_SERVER['USERPROFILE'] ?? $_ENV['USERPROFILE'] ?? null);
+            if (is_string($homeDir) && $homeDir !== '') {
+                return $homeDir;
+            }
+        }
+
+        return storage_path('app/tmp/puppeteer-home');
+    }
+
+    private function exampleNodeBinaryPath(): string
+    {
+        return $this->runningOnWindows()
+            ? 'C:\\Program Files\\nodejs\\node.exe'
+            : '/usr/bin/node';
+    }
+
+    private function runningOnWindows(): bool
+    {
+        return PHP_OS_FAMILY === 'Windows';
     }
 
     private function buildPreviewDocumentHtml(PagebuilderProject $project, string $device, string $baseUrl): string
