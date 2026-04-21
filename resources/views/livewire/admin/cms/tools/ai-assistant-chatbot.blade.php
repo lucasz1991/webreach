@@ -252,7 +252,7 @@
                                     <div class="mt-3 flex flex-wrap gap-2">
                                         <button
                                             @click="messagefront='Welche Seitenstruktur empfiehlst du für dieses Projekt?'; sendMessage();"
-                                            class="inline-flex items-center gap-2 rounded-full bg-blue/15 text-slate-800 px-3 py-1.5 text-xs font-medium ring-1 ring-rcgold/20 hover:bg-blue/25 transition"
+                                            class="inline-flex items-center gap-2 rounded-full bg-blue-600/15 text-slate-800 px-3 py-1.5 text-xs font-medium ring-1 ring-rcgold/20 hover:bg-blue-600/25 transition"
                                         >
                                             <i class="fal fa-question-circle text-rcgold"></i>
                                             Struktur vorschlagen
@@ -260,7 +260,7 @@
 
                                         <button
                                             @click="messagefront='Prüfe Farben und Identity für diese Website.'; sendMessage();"
-                                            class="inline-flex items-center gap-2 rounded-full bg-blue/15 text-slate-800 px-3 py-1.5 text-xs font-medium ring-1 ring-rcgold/20 hover:bg-blue/25 transition"
+                                            class="inline-flex items-center gap-2 rounded-full bg-blue-600/15 text-slate-800 px-3 py-1.5 text-xs font-medium ring-1 ring-rcgold/20 hover:bg-blue-600/25 transition"
                                         >
                                             <i class="fal fa-palette text-rcgold"></i>
                                             Farben & Identity
@@ -268,7 +268,7 @@
 
                                         <button
                                             @click="messagefront='Schreibe mir einen starken Hero-Abschnitt mit Headline, Subline und CTA.'; sendMessage();"
-                                            class="inline-flex items-center gap-2 rounded-full bg-blue/15 text-slate-800 px-3 py-1.5 text-xs font-medium ring-1 ring-rcgold/20 hover:bg-blue/25 transition"
+                                            class="inline-flex items-center gap-2 rounded-full bg-blue-600/15 text-slate-800 px-3 py-1.5 text-xs font-medium ring-1 ring-rcgold/20 hover:bg-blue-600/25 transition"
                                         >
                                             <i class="fal fa-pen-nib text-rcgold"></i>
                                             Hero-Text erstellen
@@ -281,7 +281,7 @@
                         {{-- Loading bubble --}}
                         <div x-show="isLoading" x-collapse class="mt-3">
                             <div class="flex items-center gap-2">
-                                <div class="h-9 w-9 rounded-xl bg-blue/20 text-rcgold flex items-center justify-center ring-1 ring-rcgold/20">
+                                <div class="h-9 w-9 rounded-xl bg-blue-600/20 text-rcgold flex items-center justify-center ring-1 ring-rcgold/20">
                                     <i class="fal fa-sparkles"></i>
                                 </div>
 
@@ -344,7 +344,7 @@
                 class="
                     inline-flex items-center gap-2
                     rounded-xl
-                    bg-blue
+                    bg-blue-600 
                     px-4 py-2
                     text-xs md:text-sm
                     font-semibold text-white
