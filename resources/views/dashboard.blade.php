@@ -3,4 +3,4 @@
         <h1 class="text-3xl font-semibold text-gray-900">Nutzer-Dashboard</h1>
         <p class="mt-3 text-gray-700">Du bist im regulären Nutzerbereich eingeloggt.</p>
     </div>
-</x-app-layout>
+</x-app-layout> 

@@ -144,33 +144,33 @@
             <x-settings-collapse>
                 <x-slot name="trigger">Grundfarben</x-slot>
                 <x-slot name="content">
-                    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.28fr)_minmax(320px,0.92fr)]">
-                        <div class="space-y-4">
+                    <div class="grid gap-[3%] xl:grid-cols-[minmax(0,1.28fr)_minmax(0,0.92fr)]">
+                        <div class="max-w-full space-y-[2.5%]">
 
-                            <div class="relative overflow-hidden rounded-[32px] border border-slate-200 bg-slate-50 p-3 shadow-[0_28px_70px_-30px_rgba(15,23,42,0.35)]">
+                            <div class="relative w-full max-w-full overflow-hidden rounded-[4%] border border-slate-200 bg-slate-50 p-[2%] shadow-[0_28px_70px_-30px_rgba(15,23,42,0.35)]">
                                 <div class="absolute inset-0 opacity-80" :style="{ background: 'radial-gradient(circle at top right, ' + hexToRgba(accentColor, 0.18) + ', transparent 30%), radial-gradient(circle at left bottom, ' + hexToRgba(primaryColor, 0.14) + ', transparent 34%)' }"></div>
-                                <div class="relative overflow-hidden rounded-[28px] border border-white/70 transition-all duration-200 ease-out" style="aspect-ratio: 16 / 9;"
+                                <div class="relative max-w-full overflow-hidden rounded-[3.5%] border border-white/70 transition-all duration-200 ease-out" style="aspect-ratio: 16 / 9;"
                                     :style="mergeStyles(spotStyle('backgroundColor', backgroundColor, 'rgba(255,255,255,0.72)', '0 18px 46px -24px rgba(15,23,42,0.45)'), { backgroundColor: previewColor(backgroundColor, '#f8fafc') })"
                                     @mouseenter="setActive('backgroundColor')" @mouseleave="clearActive('backgroundColor')" @click="openColorPicker('backgroundColor')" role="button" tabindex="0">
                                     <div class="flex h-full flex-col">
-                                        <div class="flex items-center justify-between gap-3 px-4 py-2 transition-all duration-200 ease-out"
+                                        <div class="flex items-center justify-between gap-[2%] px-[3%] py-[1.6%] transition-all duration-200 ease-out"
                                             :style="mergeStyles(spotStyle('primaryColor', primaryColor, 'rgba(255,255,255,0.16)', '0 12px 30px -20px rgba(15,23,42,0.2)'), { backgroundColor: previewColor(primaryColor, '#2563eb') })"
                                             @mouseenter.stop="setActive('primaryColor')" @mouseleave.stop="clearActive('primaryColor')" @click.stop="openColorPicker('primaryColor')" role="button" tabindex="0">
-                                            <div class="flex w-[35%] items-center gap-2.5 ">
-                                                <div class="w-[18%] aspect-square rounded-xl border border-slate-200 bg-slate-100"></div>
-                                                <div class="w-[68%] space-y-1.5"><div class="w-[62%] aspect-[8/1] rounded-full bg-white/85"></div><div class="w-[46%] aspect-[7/1] rounded-full bg-white/50"></div></div>
+                                            <div class="flex w-[35%] min-w-0 items-center gap-[5%]">
+                                                <div class="aspect-square w-[18%] rounded-[28%] border border-slate-200 bg-slate-100"></div>
+                                                <div class="w-[68%] space-y-[8%]"><div class="w-[62%] aspect-[8/1] rounded-full bg-white/85"></div><div class="w-[46%] aspect-[7/1] rounded-full bg-white/50"></div></div>
                                             </div>
-                                            <div class="hidden w-[46%] items-center justify-end gap-2 sm:flex">
-                                                <span class="w-[22%] aspect-[10/1] rounded-full border border-white/20 bg-white/35"></span>
-                                                <span class="w-[22%] aspect-[10/1] rounded-full border border-white/20 bg-white/55"></span>
-                                                <span class="w-[22%] aspect-[10/1] rounded-full border border-white/20 bg-white/40"></span>
-                                                <span class="w-[22%] aspect-[10/1] rounded-full border border-white/20 bg-white/30"></span>
+                                            <div class="hidden w-[46%] min-w-0 items-center justify-end gap-[3%] sm:flex">
+                                                <span class="w-[20%] aspect-[10/1] rounded-full border border-white/20 bg-white/35"></span>
+                                                <span class="w-[20%] aspect-[10/1] rounded-full border border-white/20 bg-white/55"></span>
+                                                <span class="w-[20%] aspect-[10/1] rounded-full border border-white/20 bg-white/40"></span>
+                                                <span class="w-[20%] aspect-[10/1] rounded-full border border-white/20 bg-white/30"></span>
                                             </div>
                                         </div>
 
-                                        <div class="grid flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_30%]">
-                                            <div class="space-y-4">
-                                                <div class="flex flex-wrap gap-3">
+                                        <div class="grid min-w-0 flex-1 gap-[3%] p-[3%] lg:grid-cols-[minmax(0,1fr)_30%]">
+                                            <div class="min-w-0 space-y-[3%]">
+                                                <div class="flex flex-wrap gap-[3%]">
                                                     <div class="inline-flex w-[26%] aspect-[32/9] items-center rounded-full border transition-all duration-200 ease-out"
                                                         :style="mergeStyles(spotStyle('secondaryColor', secondaryColor, hexToRgba(secondaryColor, 0.14), '0 10px 20px -18px rgba(15,23,42,0.2)'), { backgroundColor: previewColor(secondaryColor, '#64748b') })"
                                                         @mouseenter="setActive('secondaryColor')" @mouseleave="clearActive('secondaryColor')" @click.stop="openColorPicker('secondaryColor')" role="button" tabindex="0"><span class="mx-auto w-[50%] aspect-[7/1] rounded-full bg-white/75"></span></div>
@@ -179,55 +179,55 @@
                                                         @mouseenter="setActive('accentColor')" @mouseleave="clearActive('accentColor')" @click.stop="openColorPicker('accentColor')" role="button" tabindex="0"><span class="mx-auto w-[50%] aspect-[6/1] rounded-full bg-white/75"></span></div>
                                                 </div>
 
-                                                <div class="space-y-3 rounded-[24px] border p-4 transition-all duration-200 ease-out"
+                                                <div class="space-y-[3%] rounded-[7%] border p-[4%] transition-all duration-200 ease-out"
                                                     :style="mergeStyles(spotStyle('surfaceColor', surfaceColor, 'rgba(255,255,255,0.68)', '0 16px 34px -26px rgba(15,23,42,0.16)'), { backgroundColor: previewColor(surfaceColor, '#ffffff'), borderColor: hexToRgba(secondaryColor, 0.16) })"
                                                     @mouseenter="setActive('surfaceColor')" @mouseleave="clearActive('surfaceColor')" @click.stop="openColorPicker('surfaceColor')" role="button" tabindex="0">
-                                                    <div class="space-y-3 rounded-[24px] border border-transparent p-1 transition-all duration-200 ease-out"
+                                                    <div class="space-y-[3%] rounded-[7%] border border-transparent p-[2%] transition-all duration-200 ease-out"
                                                         :style="spotStyle('textColor', textColor, 'transparent', 'none')"
                                                         @mouseenter.stop="setActive('textColor')" @mouseleave.stop="clearActive('textColor')" @click.stop="openColorPicker('textColor')" role="button" tabindex="0">
                                                         <div class="w-[24%] aspect-[24/3] rounded-full" :style="{ backgroundColor: hexToRgba(textColor, 0.16) }"></div>
                                                         <div class="w-full aspect-[14/1] rounded-full" :style="{ backgroundColor: hexToRgba(textColor, 0.92) }"></div>
                                                         <div class="w-[80%] aspect-[14/1] rounded-full" :style="{ backgroundColor: hexToRgba(textColor, 0.7) }"></div>
                                                     </div>
-                                                    <div class="flex flex-wrap gap-3">
-                                                        <button type="button" class="inline-flex w-[34%] aspect-[14/3] items-center justify-center rounded-2xl border transition-all duration-200 ease-out"
+                                                    <div class="flex flex-wrap gap-[3%]">
+                                                        <button type="button" class="inline-flex w-[34%] aspect-[14/3] items-center justify-center rounded-[16%] border transition-all duration-200 ease-out"
                                                             :style="mergeStyles(spotStyle('accentColor', accentColor, hexToRgba(accentColor, 0.16), '0 14px 28px -24px rgba(15,23,42,0.18)'), { backgroundColor: previewColor(accentColor, '#14b8a6') })"
                                                             @mouseenter="setActive('accentColor')" @mouseleave="clearActive('accentColor')" @click.stop="openColorPicker('accentColor')"><span class="w-[50%] aspect-[8/1] rounded-full bg-white/75"></span></button>
-                                                        <div class="inline-flex w-[22%] aspect-[10/3] items-center justify-center rounded-2xl border transition-all duration-200 ease-out"
+                                                        <div class="inline-flex w-[22%] aspect-[10/3] items-center justify-center rounded-[16%] border transition-all duration-200 ease-out"
                                                             :style="mergeStyles(spotStyle('footerColor', footerColor, hexToRgba(footerColor, 0.14), '0 10px 20px -18px rgba(15,23,42,0.16)'), { backgroundColor: hexToRgba(footerColor, 0.1), borderColor: hexToRgba(footerColor, 0.22) })"
                                                             @mouseenter="setActive('footerColor')" @mouseleave="clearActive('footerColor')" @click.stop="openColorPicker('footerColor')" role="button" tabindex="0"><span class="w-[50%] aspect-[28/5] rounded-full" :style="{ backgroundColor: previewColor(footerColor, '#0f172a') }"></span></div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div class="space-y-3">
-                                                <div class="rounded-[24px] border p-3 transition-all duration-200 ease-out"
+                                            <div class="min-w-0 space-y-[3%]">
+                                                <div class="rounded-[7%] border p-[4%] transition-all duration-200 ease-out"
                                                     :style="mergeStyles(spotStyle('surfaceColor', surfaceColor, 'rgba(255,255,255,0.7)', '0 16px 34px -26px rgba(15,23,42,0.16)'), { backgroundColor: previewColor(surfaceColor, '#ffffff'), borderColor: hexToRgba(secondaryColor, 0.16) })"
                                                     @mouseenter="setActive('surfaceColor')" @mouseleave="clearActive('surfaceColor')" @click.stop="openColorPicker('surfaceColor')" role="button" tabindex="0">
                                                     <div class="flex items-center justify-between">
-                                                        <div class="space-y-2"><div class="w-[24%] aspect-[24/5] rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.34) }"></div><div class="w-[32%] aspect-[10/3] rounded-full" :style="{ backgroundColor: hexToRgba(textColor, 0.84) }"></div></div>
-                                                        <div class="w-[20%] aspect-square rounded-2xl transition-all duration-200 ease-out"
+                                                        <div class="space-y-[6%]"><div class="w-[24%] aspect-[24/5] rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.34) }"></div><div class="w-[32%] aspect-[10/3] rounded-full" :style="{ backgroundColor: hexToRgba(textColor, 0.84) }"></div></div>
+                                                        <div class="w-[20%] aspect-square rounded-[18%] transition-all duration-200 ease-out"
                                                             :style="mergeStyles(spotStyle('accentColor', accentColor, hexToRgba(accentColor, 0.16), '0 10px 22px -18px rgba(15,23,42,0.18)'), { backgroundColor: previewColor(accentColor, '#14b8a6') })"
                                                             @mouseenter.stop="setActive('accentColor')" @mouseleave.stop="clearActive('accentColor')" @click.stop="openColorPicker('accentColor')"></div>
                                                     </div>
-                                                    <div class="mt-3 w-full aspect-[58/1] overflow-hidden rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.18) }"><div class="h-full rounded-full transition-all duration-200 ease-out" :style="{ width: '68%', backgroundColor: previewColor(accentColor, '#14b8a6') }"></div></div>
-                                                    <div class="mt-3 grid grid-cols-3 gap-2"><div class="w-full aspect-[12/5] rounded-2xl" :style="{ backgroundColor: hexToRgba(textColor, 0.08) }"></div><div class="w-full aspect-[12/5] rounded-2xl" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.14) }"></div><div class="w-full aspect-[12/5] rounded-2xl" :style="{ backgroundColor: hexToRgba(accentColor, 0.14) }"></div></div>
+                                                    <div class="mt-[4%] w-full aspect-[58/1] overflow-hidden rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.18) }"><div class="h-full rounded-full transition-all duration-200 ease-out" :style="{ width: '68%', backgroundColor: previewColor(accentColor, '#14b8a6') }"></div></div>
+                                                    <div class="mt-[4%] grid grid-cols-3 gap-[3%]"><div class="w-full aspect-[12/5] rounded-[16%]" :style="{ backgroundColor: hexToRgba(textColor, 0.08) }"></div><div class="w-full aspect-[12/5] rounded-[16%]" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.14) }"></div><div class="w-full aspect-[12/5] rounded-[16%]" :style="{ backgroundColor: hexToRgba(accentColor, 0.14) }"></div></div>
                                                 </div>
 
-                                                <div class="rounded-[24px] border p-3 transition-all duration-200 ease-out"
+                                                <div class="rounded-[7%] border p-[4%] transition-all duration-200 ease-out"
                                                     :style="mergeStyles(spotStyle('secondaryColor', secondaryColor, hexToRgba(secondaryColor, 0.16), '0 14px 30px -24px rgba(15,23,42,0.18)'), { backgroundColor: hexToRgba(secondaryColor, 0.08) })"
                                                     @mouseenter="setActive('secondaryColor')" @mouseleave="clearActive('secondaryColor')" @click.stop="openColorPicker('secondaryColor')" role="button" tabindex="0">
-                                                    <div class="space-y-3"><div class="w-[34%] aspect-[32/5] rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.42) }"></div><div class="w-[58%] aspect-[28/3] rounded-full" :style="{ backgroundColor: hexToRgba(textColor, 0.16) }"></div></div>
-                                                    <div class="mt-4 rounded-[22px] border p-4" :style="{ backgroundColor: previewColor(surfaceColor, '#ffffff'), borderColor: hexToRgba(secondaryColor, 0.16) }"><div class="w-full aspect-[15/1] rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.18) }"></div><div class="mt-3 w-[80%] aspect-[15/1] rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.14) }"></div></div>
+                                                    <div class="space-y-[3%]"><div class="w-[34%] aspect-[32/5] rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.42) }"></div><div class="w-[58%] aspect-[28/3] rounded-full" :style="{ backgroundColor: hexToRgba(textColor, 0.16) }"></div></div>
+                                                    <div class="mt-[5%] rounded-[7%] border p-[4%]" :style="{ backgroundColor: previewColor(surfaceColor, '#ffffff'), borderColor: hexToRgba(secondaryColor, 0.16) }"><div class="w-full aspect-[15/1] rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.18) }"></div><div class="mt-[4%] w-[80%] aspect-[15/1] rounded-full" :style="{ backgroundColor: hexToRgba(secondaryColor, 0.14) }"></div></div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div class="px-6 pb-5">
-                                            <div class="flex items-center justify-between rounded-[24px] border px-5 py-4 transition-all duration-200 ease-out"
+                                        <div class="px-[5%] pb-[4.5%]">
+                                            <div class="flex items-center justify-between rounded-[7%] border px-[4%] py-[3%] transition-all duration-200 ease-out"
                                                 :style="mergeStyles(spotStyle('footerColor', footerColor, 'rgba(255,255,255,0.14)', '0 12px 24px -20px rgba(15,23,42,0.22)'), { backgroundColor: previewColor(footerColor, '#0f172a') })"
                                                 @mouseenter="setActive('footerColor')" @mouseleave="clearActive('footerColor')" @click.stop="openColorPicker('footerColor')" role="button" tabindex="0">
-                                                <div class="mx-auto flex w-[46%] items-center justify-center ">
+                                                <div class="mx-auto flex w-[46%] items-center justify-center">
                                                     <span class="w-[54%] h-[2%] rounded-full bg-white/70"></span>
                                                 </div>
                                             </div>
