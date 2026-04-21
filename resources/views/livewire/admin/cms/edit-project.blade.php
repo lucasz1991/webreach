@@ -49,6 +49,6 @@
             </div>
         </div>
     </div>
-
+    @livewire('admin.cms.tools.ai-assistant-chatbot', ['projectId' => $project->id], key('ai-assistant-chatbot-' . $project->id))
     @livewire('admin.cms.project-settings-manager')
 </div>
