@@ -8,18 +8,14 @@
 
         sendMessage() {
             if (this.messagefront.trim() === '') return;
-
             this.chatHistory.push({ role: 'user', content: this.messagefront });
             this.isLoading = true;
-
             this.message = this.messagefront;
             Livewire.dispatch('sendMessage');
-
             this.messagefront = '';
         },
 
         lockBody() {
-            // nur auf mobile/overlay sinnvoll
             this.__scrollY = window.scrollY || 0;
             document.documentElement.classList.add('overflow-hidden');
             document.body.classList.add('overflow-hidden');
@@ -29,7 +25,6 @@
             document.body.style.right = '0';
             document.body.style.width = '100%';
         },
-
         unlockBody() {
             document.documentElement.classList.remove('overflow-hidden');
             document.body.classList.remove('overflow-hidden');
